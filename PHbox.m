@@ -27,5 +27,5 @@ function [N,x]=PHbox(N_0,dt,gas,L,lum,bins,alpha)
     x=[x;0];
   endwhile
 %  display(N)
-%  display(x)
+%  display(x)addasdsadasdada
 endfunction
