@@ -5,6 +5,8 @@
 %            Bins (An array)
 %            Alpha (The power the frequency goes)
 %            dt (Timestep)
+%            rs (Some initial distances from source)
+%            Ac (Cross section of area of the box/cylinder in cm^-3)
 % Returns: A (number matrix of photons after emission)
 % 
 % Compatibility: Octave (+Matlab?)

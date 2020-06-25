@@ -14,8 +14,10 @@
 %            xh1i (Initial neutral Fraction)(''')
 %            Recombination (Temperature dependent function) (''')
 %            Temp (Temperature, float) (''')
+%            rs (Some initial distances from source) ('''')
 % Returns: N (number matrix of photons after the first batch of photons reached the end of the box)
 %          x (Location of each photon packets)
+%          xh (Neutral Hydrogen Fraction, an array) ('''')
 %
 % Compatibility: Octave (+Matlab?)
 % Author: To Kwok Hei Matthew
