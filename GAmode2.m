@@ -16,9 +16,9 @@
 %   Make tau an array 12/06/20
 
 function A=GAmode2(N,x,nh,sigma,Nc,L,xh1)
-  tau=L*nh*xh1'*sigma/Nc
+  tau=L*nh*xh1'*sigma/Nc;
   A=N;
-  ibox=find(x<L);
+  ibox=find(x<=(Nc-1)*L/Nc);
   if length(ibox)>length(xh1)(1)
     error("Something is wrong with the code");
   endif

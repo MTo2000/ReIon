@@ -33,7 +33,7 @@ function [N,x,xh1]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recombina
   c=299792458;
   Z=input("Please enter the atomic number of the gas: ");
   Bins=bins./vT;
-  sigma=ARAnu_HZ(Bins,Z)
+  sigma=ARAnu_HZ(Bins,Z);
   recommend=10*(nh*xh1i*max(sigma)*L);
   display(["The recommended number of cells is around "  num2str(recommend)])
   Nc=input("Please enter the number of cells desired: ");
@@ -64,7 +64,7 @@ function [N,x,xh1]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recombina
     total2=zeros(1,Nc);
     Gamma=zeros(1,Nc);
     N=PHsource(N,lum,bins,alpha,dt,rs,Ac);    #Source adding in photons
-    k=find(x<L);
+    k=find(x<=(Nc-0.1)*L/Nc);
     total1(k)=sum(N,2)(k);
     N=gas(N,x,nh,sigma,Nc,L,xh1);         #Gas acts on the photons
     total2(k)=sum(N,2)(k);
