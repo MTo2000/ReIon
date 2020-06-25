@@ -15,12 +15,17 @@
 %   Created in 09/06/2020
 %   Make tau an array 12/06/20
 
-function A=GAmode2(N,x,nh,sigma,Nc,L,xh1)
+function [A,minxh]=GAmode2(N,x,nh,sigma,Nc,L,xh1)
+  format short e
   tau=L*nh*xh1'*sigma/Nc;
+  mask=find(tau<1e-10);
+  tau(mask)=1e-10;
+  minxh=0;
   A=N;
   ibox=find(x<=(Nc-1)*L/Nc);
   if length(ibox)>length(xh1)(1)
     error("Something is wrong with the code");
   endif
   A(ibox,:)=A(ibox,:).*e.^(-tau)(ibox,:);
+  minxh=1e-10*Nc/(L*nh*sigma(1));
 endfunction

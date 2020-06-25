@@ -29,6 +29,7 @@
 %   Neutral Fraction Calculation 16/06/20
 
 function [N,x,xh1]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recombination,Temp,rs)
+  format short e
   T=0;
   c=299792458;
   Z=input("Please enter the atomic number of the gas: ");
@@ -66,16 +67,20 @@ function [N,x,xh1]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recombina
     N=PHsource(N,lum,bins,alpha,dt,rs,Ac);    #Source adding in photons
     k=find(x<=(Nc-0.1)*L/Nc);
     total1(k)=sum(N,2)(k);
-    N=gas(N,x,nh,sigma,Nc,L,xh1);         #Gas acts on the photons
+    [N,mini]=gas(N,x,nh,sigma,Nc,L,xh1);         #Gas acts on the photons
     total2(k)=sum(N,2)(k);
     T=T+1;
     x=c*dt.+x;
+    neg=find(xh1<mini);
+    xh1(neg)=mini;
     Gamma=(total1-total2)./(dt*Nh*xh1);
     fprintf(go,"Time = %f     ",T*dt);
     fprintf(go,"%2e  ",Gamma);
     fprintf(go,"\n");
-    xh1=NFhydrogen1(xh1,Gamma,recombination,Temp,nh);
-    #xh1=xh1+dt*(-Gamma.*xh1+(recombination(T)*Nh).*(1.-xh1).^2)
+    #xh1=NFhydrogen1(xh1,Gamma,recombination,Temp,nh);
+    xh1=xh1+dt*(-Gamma.*xh1+(recombination(Temp)*nh).*(1.-xh1).^2);
+    neg=find(xh1<mini);
+    xh1(neg)=mini;
   endwhile
   fclose(go);
 endfunction
