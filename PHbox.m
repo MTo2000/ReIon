@@ -18,6 +18,7 @@
 % Returns: N (number matrix of photons after the first batch of photons reached the end of the box)
 %          x (Location of each photon packets)
 %          xh (Neutral Hydrogen Fraction, an array) ('''')
+%          eq (Equilibrium value for Neutral Hydrogen Fraction)
 %
 % Compatibility: Octave (+Matlab?)
 % Author: To Kwok Hei Matthew
@@ -28,9 +29,9 @@
 %   Write Gamma in a separate file 12/06/20
 %   Neutral Fraction Calculation 16/06/20
 
-function [N,x,xh1]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recombination,Temp,rs)
+function [N,x,xh1,eq]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recombination,Temp,rs)
   format short e
-  T=0;
+  T=1;
   c=299792458;
   Z=input("Please enter the atomic number of the gas: ");
   Bins=bins./vT;
@@ -43,15 +44,21 @@ function [N,x,xh1]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recombina
   elseif
     error("Number of cells is not an integer")
   endif
-  if xh1i<1 && xh1i>0
+  if xh1i<=1 && xh1i>0
     ;
   elseif
     error("Neutral fraction must be between 0 and 1")
   endif
   dt=L/(Nc * c);
+  modifier=dt/2*1e-10; 
+  display(["The unmodified timestep is " num2str(dt)]);
+  display(["The recommended modifier is " num2str(modifier)]);
+  M=input("Please enter the modifier desired: ");
+  dt=dt/M;
+  eq=zeros(1,Nc);
   x=zeros(1,0);
   N=zeros(0,size(bins)(2));
-  Nh=nh*Ac*L/Nc                        #Total number of Hydrogens in each cell
+  Nh=nh*Ac*L/Nc;                        #Total number of Hydrogens in each cell
   xh1=xh1i*ones(1,Nc);                 #Initial neutral fraction for all cells
   if isfile('Gamma_list.txt')
      delete 'Gamma_list.txt';
@@ -61,26 +68,32 @@ function [N,x,xh1]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recombina
   go=fopen('Gamma_list.txt','w');
   while T<iterations
     x=[0;x];
-    total1=zeros(1,Nc);
-    total2=zeros(1,Nc);
     Gamma=zeros(1,Nc);
     N=PHsource(N,lum,bins,alpha,dt,rs,Ac);    #Source adding in photons
-    k=find(x<=(Nc-0.1)*L/Nc);
-    total1(k)=sum(N,2)(k);
-    [N,mini]=gas(N,x,nh,sigma,Nc,L,xh1);         #Gas acts on the photons
-    total2(k)=sum(N,2)(k);
-    T=T+1;
-    x=c*dt.+x;
+    [N,mini,total1,total2]=gas(N,x,nh,sigma,Nc,L,xh1(1,:));         #Gas acts on the photons
     neg=find(xh1<mini);
     xh1(neg)=mini;
-    Gamma=(total1-total2)./(dt*Nh*xh1);
+    filled=floor(T/M);
+    ext=rem(T,M);
+    nonz=find(total1~=0);
+    for z=nonz
+      if z<=filled
+        Gamma(z)=(total1(z)-total2(z))./(dt*Nh*xh1(1,z)*M);
+      elseif
+        Gamma(z)=(total1(z)-total2(z))./(dt*Nh*xh1(1,z)*ext);
+      endif
+    endfor
     fprintf(go,"Time = %f     ",T*dt);
     fprintf(go,"%2e  ",Gamma);
     fprintf(go,"\n");
     #xh1=NFhydrogen1(xh1,Gamma,recombination,Temp,nh);
-    xh1=xh1+dt*(-Gamma.*xh1+(recombination(Temp)*nh).*(1.-xh1).^2);
+    xh1(1,:)=xh1(1,:)+dt*(-Gamma.*xh1(1,:)+(recombination(Temp)*nh).*(1.-xh1(1,:)).^2);
+    xh1=[xh1(1,:);xh1];
     neg=find(xh1<mini);
     xh1(neg)=mini;
+    T=T+1;
+    x=c*dt.+x;
   endwhile
   fclose(go);
+  eq=NFhydrogen1(xh1(1,:),Gamma,recombination,Temp,nh);
 endfunction
