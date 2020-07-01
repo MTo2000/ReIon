@@ -1,21 +1,26 @@
-% Title: A=GAmode2
+% Title: A=GAmodel
 %
 % Arguments: N (number matrix of photons before the effects of the gas)
 %            x (array recording the position of each photon packets)
-%            ne (Number density of electrons in cm^-3) 
-%            sigma (Cross section of electrons in cm^2) 
+%            nh (Number density of hydrogens (neutral of ionised) in cm^-3) 
+%            sigma (Cross section of hydrogens in cm^2) 
 %            Nc (Integer number of cells)
 %            L (Length of the box in cm)
-%            Bins (An array) ('')
+%            xh1 (Neutral Fraction) 
 % Returns: A (number matrix of photons after the effects of the gas)
+%          minxh (minimum neutral fractions to prevent numerical error growing exponentially)
+%          total1 (total number of photons in each cell before the gas acts on it)
+%          total2 (total number of photons in each cell after the gas acts on it)
 % 
 % Compatibility: Octave (+Matlab?)
 % Author: To Kwok Hei Matthew
 % History:
 %   Created in 09/06/2020
 %   Make tau an array 12/06/20
+%   Added minimum calculations 25/06.20
+%   Added total number calculations 28/06/20
 
-function [A,minxh,total1,total2]=GAmode3(N,x,nh,sigma,Nc,L,xh1)
+function [A,minxh,total1,total2]=GAmodel(N,x,nh,sigma,Nc,L,xh1)
   format short e
   tau=L*nh*xh1'*sigma/Nc;
   mask=find(tau<1e-10);

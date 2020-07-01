@@ -5,19 +5,19 @@
 %            lum (Luminosity function)
 %            Bins (An array)
 %            Alpha (The power the frequency goes)
-%            ne (Number density of electrons in cm^-3) (')
-%            sigma (Cross section of electrons in cm^2) (')
-%            Testtime (Time the simulation will undergo) (')
-%            nh (Number density of Hydrogen in cm^-3) (')
-%            Ac (Cross section area of the box/cylinder in cm^-3)(')
-%            vT (Threshold Frequency)('')
-%            xh1i (Initial neutral Fraction)(''')
-%            Recombination (Temperature dependent function) (''')
-%            Temp (Temperature, float) (''')
-%            rs (Some initial distances from source) ('''')
+%            ne (Number density of electrons in cm^-3) 
+%            sigma (Cross section of electrons in cm^2) 
+%            Testtime (Time the simulation will undergo) 
+%            nh (Number density of Hydrogen in cm^-3) 
+%            Ac (Cross section area of the box/cylinder in cm^-3)
+%            vT (Threshold Frequency)
+%            xh1i (Initial neutral Fraction)
+%            Recombination (Temperature dependent function) 
+%            Temp (Temperature, float) 
+%            rs (Some initial distances from source) 
 % Returns: N (number matrix of photons after the first batch of photons reached the end of the box)
 %          x (Location of each photon packets)
-%          xh (Neutral Hydrogen Fraction, an array) ('''')
+%          xh (Neutral Hydrogen Fraction, an array) 
 %          eq (Equilibrium value for Neutral Hydrogen Fraction)
 %
 % Compatibility: Octave (+Matlab?)
@@ -27,7 +27,9 @@
 %   New Function 09/06/2020
 %   Make Tau an array 12/06/2020
 %   Write Gamma in a separate file 12/06/20
-%   Neutral Fraction Calculation 16/06/20
+%   Equilibirum Neutral Fraction Calculation 16/06/20
+%   Time dependent Neutral Fraction Calculation 25/06/20
+%   Write xh1 in a separate file 30/06/20
 
 function [N,x,xh1,eq]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recombination,Temp,rs)
   format short e
@@ -65,12 +67,18 @@ function [N,x,xh1,eq]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recomb
   else
      ;
   endif
+  if isfile('xh_list.txt')
+     delete 'xh_list.txt';
+  else
+     ;
+  endif
   go=fopen('Gamma_list.txt','w');
+  xo=fopen('xh_list.txt','w');
   while T<iterations
     x=[0;x];
     Gamma=zeros(1,Nc);
     N=PHsource(N,lum,bins,alpha,dt,rs,Ac);    #Source adding in photons
-    [N,mini,total1,total2]=gas(N,x,nh,sigma,Nc,L,xh1(1,:));         #Gas acts on the photons
+    [N,mini,total1,total2]=gas(N,x,nh,sigma,Nc,L,xh1);         #Gas acts on the photons
     neg=find(xh1<mini);
     xh1(neg)=mini;
     filled=floor(T/M);
@@ -78,22 +86,24 @@ function [N,x,xh1,eq]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recomb
     nonz=find(total1~=0);
     for z=nonz
       if z<=filled
-        Gamma(z)=(total1(z)-total2(z))./(dt*Nh*xh1(1,z)*M);
+        Gamma(z)=(total1(z)-total2(z))./(dt*Nh*xh1(z)*M);
       elseif
-        Gamma(z)=(total1(z)-total2(z))./(dt*Nh*xh1(1,z)*ext);
+        Gamma(z)=(total1(z)-total2(z))./(dt*Nh*xh1(z)*ext);
       endif
     endfor
     fprintf(go,"Time = %f     ",T*dt);
     fprintf(go,"%2e  ",Gamma);
     fprintf(go,"\n");
-    #xh1=NFhydrogen1(xh1,Gamma,recombination,Temp,nh);
-    xh1(1,:)=xh1(1,:)+dt*(-Gamma.*xh1(1,:)+(recombination(Temp)*nh).*(1.-xh1(1,:)).^2);
-    xh1=[xh1(1,:);xh1];
+    fprintf(xo,"Time = %f     ",T*dt);
+    fprintf(xo,"%2e  ",xh1);
+    fprintf(xo,"\n");
+    xh1=xh1+dt*(-Gamma.*xh1+(recombination(Temp)*nh).*(1.-xh1).^2);
     neg=find(xh1<mini);
     xh1(neg)=mini;
     T=T+1;
     x=c*dt.+x;
   endwhile
   fclose(go);
+  fclose(xo);
   eq=NFhydrogen1(xh1(1,:),Gamma,recombination,Temp,nh);
 endfunction

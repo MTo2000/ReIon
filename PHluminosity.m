@@ -2,7 +2,7 @@
 %
 % Arguments: Bins (an array, preferrably row, can be column)
 %            Alpha (The power the frequency goes)
-% Returns: Luminosity (number of new photons (a row vector))
+% Returns: lum (number of new photons (a row vector))
 % 
 % Compatibility: Octave (+Matlab?)
 % Author: To Kwok Hei Matthew
