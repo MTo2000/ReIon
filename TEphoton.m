@@ -1,4 +1,4 @@
-% Title: L=TCphoton
+% Title: L=TEphoton
 %
 % Arguments: nh (Number density of Hydrogen in cm^-3) 
 %            xh1 (Neutral Fraction (an array))
@@ -11,7 +11,7 @@
 % History:
 %   Created in 30/06/2020
 
-function L=TCphoton(nh,xh1,Recombination,Temp)
+function L=TEphoton(nh,xh1,Recombination,Temp)
   ne=(1.-xh1)*nh;
-  L=Recombination(Temp).*ne.*nh.*xhl;
+  L=Recombination(Temp).*ne.*nh.*xh1*1e12;
 endfunction

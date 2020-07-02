@@ -11,8 +11,9 @@
 %            iterations (Number of iterations)
 %            vT (Threshold Frequency)
 %            xh1i (Initial Neutral Fraction)
-%            Recombination (Temperature dependent function) 
-%            Temp (Temperature, float) 
+%            recombination (Temperature dependent function)
+%            recombination_c (Temperature dependent function) 
+%            T0 (Initial Temperature) 
 %            rs (Some initial distances from source) 
 % Returns: N (number matrix of photons after the first batch of photons reached the end of the box)
 %          x (Location of each photon packets)
@@ -29,9 +30,11 @@
 %   Equilibirum Neutral Fraction Calculation 16/06/20
 %   Time dependent Neutral Fraction Calculation 25/06/20
 %   Write xh1 in a separate file 30/06/20
+%   Temperature dependence added 01/07/20
 
-function [N,x,xh1,eq]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recombination,Temp,rs)
+function [N,x,xh1,eq]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recombination,recombination_c,T0,rs)
   format short e
+  rho=nh*1.6735575e-21; #Mass Density in kg m^-3
   T=1;
   c=299792458;
   Z=input("Please enter the atomic number of the gas: ");
@@ -61,6 +64,8 @@ function [N,x,xh1,eq]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recomb
   N=zeros(0,size(bins)(2));
   Nh=nh*Ac*L/Nc;                        #Total number of Hydrogens in each cell
   xh1=xh1i*ones(1,Nc);                 #Initial neutral fraction for all cells
+  Temp=T0*ones(1,Nc);
+  S=TEentropy(Temp,rho,xh1);
   if isfile('Gamma_list.txt')
      delete 'Gamma_list.txt';
   else
@@ -71,13 +76,20 @@ function [N,x,xh1,eq]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recomb
   else
      ;
   endif
+  if isfile('Temp_list.txt')
+     delete 'Temp_list.txt';
+  else
+     ;
+  endif
   go=fopen('Gamma_list.txt','w');
   xo=fopen('xh_list.txt','w');
+  to=fopen('Temp_list.txt','w');
   while T<iterations
     x=[0;x];
     Gamma=zeros(1,Nc);
+    G=zeros(1,Nc);
     N=PHsource(N,lum,bins,alpha,dt,rs,Ac);    #Source adding in photons
-    [N,mini,total1,total2]=gas(N,x,nh,sigma,Nc,L,xh1);         #Gas acts on the photons
+    [N,mini,total1,total2,totalG1,totalG2]=gas(N,x,nh,sigma,Nc,L,xh1,bins,vT);         #Gas acts on the photons
     neg=find(xh1<mini);
     xh1(neg)=mini;
     filled=floor(T/M);
@@ -86,8 +98,10 @@ function [N,x,xh1,eq]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recomb
     for z=nonz
       if z<=filled
         Gamma(z)=(total1(z)-total2(z))./(dt*Nh*xh1(z)*M);
+        G(z)=nh*(totalG1(z)-totalG2(z))./(dt*Nh*M);
       elseif
         Gamma(z)=(total1(z)-total2(z))./(dt*Nh*xh1(z)*ext);
+        G(z)=nh*(totalG1(z)-totalG2(z))./(dt*Nh*ext);
       endif
     endfor
     fprintf(go,"Time = %f     ",T*dt);
@@ -96,7 +110,15 @@ function [N,x,xh1,eq]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recomb
     fprintf(xo,"Time = %f     ",T*dt);
     fprintf(xo,"%2e  ",xh1);
     fprintf(xo,"\n");
+    fprintf(to,"Time = %f     ",T*dt);
+    fprintf(to,"%2e  ",Temp);
+    fprintf(to,"\n");
+    l=TEeH(nh,xh1,Temp)+TEphoton(nh,xh1,recombination_c,Temp);
     xh1=xh1+dt*(-Gamma.*xh1+(recombination(Temp)*nh).*(1.-xh1).^2);
+    display(G)
+    display(l)
+    S=S+dt*2/3 *rho^(-5/3)*(G-l);
+    Temp=TEtemp(S,rho,xh1);
     neg=find(xh1<mini);
     xh1(neg)=mini;
     T=T+1;
@@ -104,5 +126,6 @@ function [N,x,xh1,eq]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recomb
   endwhile
   fclose(go);
   fclose(xo);
-  eq=NFhydrogen1(xh1(1,:),Gamma,recombination,Temp,nh);
+  fclose(to);
+  eq=NFhydrogen1(xh1,Gamma,recombination,Temp,nh);
 endfunction
