@@ -3,7 +3,7 @@
 % Arguments: nh (Number density of Hydrogen in cm^-3) 
 %            xh1 (Neutral Fraction (an array)) 
 %            Temp (Temperature, can be an array)  
-% Returns: L (Cooling rate from photon cooling)
+% Returns: L (Cooling rate from collisional excitation)
 %
 % Compatibility: Octave (+Matlab?)
 % Author: To Kwok Hei Matthew
