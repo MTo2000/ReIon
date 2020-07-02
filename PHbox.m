@@ -81,9 +81,21 @@ function [N,x,xh1,eq]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recomb
   else
      ;
   endif
+  if isfile('G_list.txt')
+     delete 'G_list.txt';
+  else
+     ;
+  endif
+  if isfile('L_list.txt')
+     delete 'L_list.txt';
+  else
+     ;
+  endif
   go=fopen('Gamma_list.txt','w');
   xo=fopen('xh_list.txt','w');
   to=fopen('Temp_list.txt','w');
+  Go=fopen('G_list.txt','w');
+  Lo=fopen('L_list.txt','w');
   while T<iterations
     x=[0;x];
     Gamma=zeros(1,Nc);
@@ -98,12 +110,13 @@ function [N,x,xh1,eq]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recomb
     for z=nonz
       if z<=filled
         Gamma(z)=(total1(z)-total2(z))./(dt*Nh*xh1(z)*M);
-        G(z)=nh*(totalG1(z)-totalG2(z))./(dt*Nh*M);
+        G(z)=nh*1e6*(totalG1(z)-totalG2(z))./(dt*Nh*M);
       elseif
         Gamma(z)=(total1(z)-total2(z))./(dt*Nh*xh1(z)*ext);
-        G(z)=nh*(totalG1(z)-totalG2(z))./(dt*Nh*ext);
+        G(z)=nh*1e6*(totalG1(z)-totalG2(z))./(dt*Nh*ext);
       endif
     endfor
+    l=TEeH(nh,xh1,Temp)+TEphoton(nh,xh1,recombination_c,Temp);
     fprintf(go,"Time = %f     ",T*dt);
     fprintf(go,"%2e  ",Gamma);
     fprintf(go,"\n");
@@ -113,10 +126,13 @@ function [N,x,xh1,eq]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recomb
     fprintf(to,"Time = %f     ",T*dt);
     fprintf(to,"%2e  ",Temp);
     fprintf(to,"\n");
-    l=TEeH(nh,xh1,Temp)+TEphoton(nh,xh1,recombination_c,Temp);
+    fprintf(Go,"Time = %f     ",T*dt);
+    fprintf(Go,"%2e  ",G);
+    fprintf(Go,"\n");
+    fprintf(Lo,"Time = %f     ",T*dt);
+    fprintf(Lo,"%2e  ",l);
+    fprintf(Lo,"\n");
     xh1=xh1+dt*(-Gamma.*xh1+(recombination(Temp)*nh).*(1.-xh1).^2);
-    display(G)
-    display(l)
     S=S+dt*2/3 *rho^(-5/3)*(G-l);
     Temp=TEtemp(S,rho,xh1);
     neg=find(xh1<mini);
@@ -127,5 +143,7 @@ function [N,x,xh1,eq]=PHbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recomb
   fclose(go);
   fclose(xo);
   fclose(to);
+  fclose(Go);
+  fclose(Lo);
   eq=NFhydrogen1(xh1,Gamma,recombination,Temp,nh);
 endfunction

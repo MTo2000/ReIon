@@ -13,5 +13,5 @@
 
 function L=TEphoton(nh,xh1,Recombination,Temp)
   ne=(1.-xh1)*nh;
-  L=Recombination(Temp).*ne.*nh.*xh1*1e12;
+  L=Recombination(Temp).*ne.*ne.*1e+12;
 endfunction
