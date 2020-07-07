@@ -121,19 +121,19 @@ function [N,x,xh1,eq]=HIbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recomb
       endif
     endfor
     l=TEeH(nh,xh1,Temp)+TEphoton(nh,xh1,recombination_c,Temp);
-    fprintf(go,"Time = %f     ",T*dt);
+    fprintf(go,"Time = %2e     ",T*dt);
     fprintf(go,"%2e  ",Gamma);
     fprintf(go,"\n");
-    fprintf(xo,"Time = %f     ",T*dt);
+    fprintf(xo,"Time = %2e     ",T*dt);
     fprintf(xo,"%2e  ",xh1);
     fprintf(xo,"\n");
-    fprintf(to,"Time = %f     ",T*dt);
+    fprintf(to,"Time = %2e     ",T*dt);
     fprintf(to,"%2e  ",Temp);
     fprintf(to,"\n");
-    fprintf(Go,"Time = %f     ",T*dt);
+    fprintf(Go,"Time = %2e     ",T*dt);
     fprintf(Go,"%2e  ",G);
     fprintf(Go,"\n");
-    fprintf(Lo,"Time = %f     ",T*dt);
+    fprintf(Lo,"Time = %2e     ",T*dt);
     fprintf(Lo,"%2e  ",l);
     fprintf(Lo,"\n");
     xh1=xh1+dt*(-Gamma.*xh1+(recombination(Temp)*nh).*(1.-xh1).^2);
@@ -143,9 +143,9 @@ function [N,x,xh1,eq]=HIbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recomb
     xh1(neg)=mini;
     T=T+1;
     x=c*dt.+x;
-    xh_list=[xh_list,xh1(1)];
-    g_list=[g_list,G(1)];
-    l_list=[l_list,l(1)];
+    xh_list=[xh_list,xh1(2)];
+    g_list=[g_list,G(2)];
+    l_list=[l_list,l(2)];
     t_list=[t_list,T*dt];
   endwhile
   fclose(go);
@@ -154,7 +154,7 @@ function [N,x,xh1,eq]=HIbox(gas,L,lum,bins,alpha,nh,Ac,iterations,vT,xh1i,recomb
   fclose(Go);
   fclose(Lo);
   eq=NFhydrogen1(xh1,Gamma,recombination,Temp,nh);
-  xh_list=eq(1)./xh_list;
+  xh_list=eq(2)./xh_list;
   figure(1)
   plot(t_list,xh_list);
   figure(2)
