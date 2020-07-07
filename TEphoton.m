@@ -1,6 +1,6 @@
 % Title: L=TEphoton
 %
-% Arguments: nh (Number density of Hydrogen in cm^-3) 
+% Arguments: nh (Number density of Hydrogen in m^-3) 
 %            xh1 (Neutral Fraction (an array))
 %            Recombination (Temperature dependent function) 
 %            Temp (Temperature, float)  
@@ -13,5 +13,5 @@
 
 function L=TEphoton(nh,xh1,Recombination,Temp)
   ne=(1.-xh1)*nh;
-  L=Recombination(Temp).*ne.*ne.*1e+12;
+  L=Recombination(Temp).*ne.*ne;
 endfunction

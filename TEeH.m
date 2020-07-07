@@ -1,6 +1,6 @@
 % Title: L=TEeH
 %
-% Arguments: nh (Number density of Hydrogen in cm^-3) 
+% Arguments: nh (Number density of Hydrogen in m^-3) 
 %            xh1 (Neutral Fraction (an array)) 
 %            Temp (Temperature, can be an array)  
 % Returns: L (Cooling rate from collisional excitation)
@@ -12,5 +12,5 @@
 
 function L=TEeH(nh,xh1,Temp)
   ne=(1.-xh1)*nh;
-  L=7.3e-20*ne.*nh.*xh1.*e.^(-118400./Temp);
+  L=7.3e-32*ne.*nh.*xh1.*e.^(-118400./Temp);
 endfunction

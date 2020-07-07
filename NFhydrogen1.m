@@ -4,7 +4,7 @@
 %            Gamma (Ionisation rate, an array)
 %            Recombination (Temperature dependent function)
 %            Temp (Temperature, can be an array)
-%            nh (Number density of hudrogen atoms (regardless or ionisd or not) in cm^-3)
+%            nh (Number density of hudrogen atoms (regardless or ionisd or not) in m^-3)
 % Returns: x1 (Neutral Fraction of neutral hydrogen for next iteration)
 %
 % Compatibility: Octave (+Matlab?)
