@@ -54,7 +54,7 @@ function [N,x,xh1,eq]=PHbox(L,lum,bins,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,x
   BinHe2=bins./vHe2;
   sigmaH1=ARAnu_HZ(BinH1,1).*1e-4; #Turning it to m^2
   sigmaHe1=ARAnu_HeI(BinHe1).*1e-4; #Turning it to m^2
-  sigmaHe2=ARAnu_HZ(BinHe2,2)*1e-4; #Turning it to m^2
+  sigmaHe2=ARAnu_HZ(BinHe2,2).*1e-4; #Turning it to m^2
   a=max([max(sigmaH1),max(sigmaHe1),max(sigmaHe2)]);
   recommend=10*(nh*xh1i*a*L);
   display(["The recommended number of cells is around "  num2str(recommend)])
@@ -187,13 +187,14 @@ function [N,x,xh1,eq]=PHbox(L,lum,bins,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,x
         GHe2(z)=nhe*totalGHe2(z)./(dt*Nhe*ext);
       endif
     endfor
+    
     l=TEeH(nh,nhe,xh1,xhe1,xhe3,Temp)+TEphoton(nh,nhe,xh1,xhe1,xhe3,Temp);
     ne=(1.-xh1)*nh+(1.-xhe1+xhe3)*nhe;
     xh1=xh1+dt*(-GammaH1.*xh1+REalphaHII(Temp).*(1.-xh1).*ne);
     xhe1=xhe1+dt*(-GammaHe1.*xhe1+REalphaHeII(Temp).*(1.-xhe1-xhe3).*ne);
     xhe3=xhe3+dt*(GammaHe2.*(1-xhe1-xhe3)-REalphaHeIII(Temp).*xhe3.*ne);
     G=GH1+GHe1+GHe2;
-    S=S+dt*2/3 *rho^(-5/3)*(G-l);
+    S=S+dt*2/3*rho^(-5/3)*(G-l);
     Temp=TEtemp(S,rho,xh1,xhe1,xhe3,ratio);
 
     neg1=find(xh1<mini(1));
