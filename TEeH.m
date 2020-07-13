@@ -10,7 +10,7 @@
 % History:
 %   Created in 30/06/2020
 
-function L=TEeH(nh,xh1,Temp)
-  ne=(1.-xh1)*nh;
+function L=TEeH(nh,nhe,xh1,xhe1,xhe3,Temp)
+  ne=(1.-xh1)*nh+(1.-xhe1+xhe3)*nhe;
   L=7.3e-32*ne.*nh.*xh1.*e.^(-118400./Temp);
 endfunction
