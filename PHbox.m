@@ -164,7 +164,7 @@ function [N,x,xh1,eq]=PHbox(L,lum,bins,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,x
     xhe2=1.-xhe1.-xhe3;
     neg3=find(xhe2<mini(3));
     xhe2(neg3)=mini(3);
-    xhe3=1.-xhe1.-xhe2;
+    xhe3=max(1.-xhe1.-xhe2,1e-10);
     
     filled=floor(T/M);
     ext=rem(T,M);
@@ -266,14 +266,14 @@ function [N,x,xh1,eq]=PHbox(L,lum,bins,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,x
   plot(t_list,xh1_list);
   axis([0,limx,0,1.2*max(xh1_list)])
   xlabel("Time in seconds")
-  legend("eq(xh1)/xh1(t)")
+  #legend("eq(xh1)/xh1(t)")
   title("How quickly it is approaching equilibrium value")
   
   subplot(2,5,2)
   plot(t_list,ratio0);
   axis([0,limx,0,1.2*max(ratio0)])
   xlabel("Time in seconds")
-  legend("Cooling Rate/Heating Rate")
+  #legend("Cooling Rate/Heating Rate")
   title("Heating Rate vs Cooling Rate ratio")
   
   subplot(2,5,3)
@@ -284,7 +284,7 @@ function [N,x,xh1,eq]=PHbox(L,lum,bins,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,x
   axis([0,limx])
   xlabel("Time in seconds")
   ylabel("Energy change in Joules per second")
-  legend("Heating Rate","Cooling Rate")
+  #legend("Heating Rate","Cooling Rate")
   title("Heating Rate vs Cooling Rate, global")
   
   subplot(2,5,6)
@@ -292,14 +292,14 @@ function [N,x,xh1,eq]=PHbox(L,lum,bins,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,x
   axis([0,limx,0,1.2*max(T_list)])
   xlabel("Time in seconds")
   ylabel("Temperature in K")
-  legend("Temperature(t)")
+  #legend("Temperature(t)")
   title("Temperature")
   
   subplot(2,5,4)
   plot(t_list,ratio1);
   axis([0,limx,0,1.2*max(ratio1)])
   xlabel("Time in seconds")
-  legend("Recombination Rate/Ionisation Rate")
+  #legend("Recombination Rate/Ionisation Rate")
   title("Ionisation Rate vs Recombination Rate ratio, Hydrogen 1")
   
   subplot(2,5,5)
@@ -310,14 +310,14 @@ function [N,x,xh1,eq]=PHbox(L,lum,bins,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,x
   axis([0,limx])
   xlabel("Time in seconds")
   ylabel("Rate of Change")
-  legend("Ionisation Rate","Recombination Rate")
+  #legend("Ionisation Rate","Recombination Rate")
   title("Ionisation Rate vs Recombination Rate, global, Hydrogen 1")
   
   subplot(2,5,7)
   plot(t_list,ratio2);
   axis([0,limx,0,1.2*max(ratio2)])
   xlabel("Time in seconds")
-  legend("Recombination Rate/Ionisation Rate")
+  #legend("Recombination Rate/Ionisation Rate")
   title("Ionisation Rate vs Recombination Rate ratio, Helium 1")
   
   subplot(2,5,8)
@@ -328,14 +328,14 @@ function [N,x,xh1,eq]=PHbox(L,lum,bins,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,x
   axis([0,limx])
   xlabel("Time in seconds")
   ylabel("Rate of Change")
-  legend("Ionisation Rate","Recombination Rate")
+  #legend("Ionisation Rate","Recombination Rate")
   title("Ionisation Rate vs Recombination Rate, global, Helium 1")
   
   subplot(2,5,9)
   plot(t_list,ratio3);
   axis([0,limx,0,1.2*max(ratio3)])
   xlabel("Time in seconds")
-  legend("Recombination Rate/Ionisation Rate")
+  #legend("Recombination Rate/Ionisation Rate")
   title("Ionisation Rate vs Recombination Rate ratio, Helium 3")
   
   subplot(2,5,10)
@@ -346,6 +346,6 @@ function [N,x,xh1,eq]=PHbox(L,lum,bins,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,x
   axis([0,limx])
   xlabel("Time in seconds")
   ylabel("Rate of Change")
-  legend("Ionisation Rate","Recombination Rate")
+  #legend("Ionisation Rate","Recombination Rate")
   title("Ionisation Rate vs Recombination Rate, global, Helium 3")
 endfunction
