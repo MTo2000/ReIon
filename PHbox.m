@@ -136,6 +136,7 @@ function [N,x,xh1,eq]=PHbox(L,lum,bins,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,x
   xhe3_list=[xhe3i];
   g_list=[0];
   l_list=[0];
+  l1_list=[0];
   t_list=[0];
   T_list=[T0];
   G1_list=[0];
@@ -188,6 +189,7 @@ function [N,x,xh1,eq]=PHbox(L,lum,bins,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,x
       endif
     endfor
     
+    
     l=TEeH(nh,nhe,xh1,xhe1,xhe3,Temp)+TEphoton(nh,nhe,xh1,xhe1,xhe3,Temp);
     ne=(1.-xh1)*nh+(1.-xhe1+xhe3)*nhe;
     xh1=xh1+dt*(-GammaH1.*xh1+REalphaHII(Temp).*(1.-xh1).*ne);
@@ -213,6 +215,7 @@ function [N,x,xh1,eq]=PHbox(L,lum,bins,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,x
     xh1_list=[xh1_list,xh1(1)];
     g_list=[g_list,G(1)];
     l_list=[l_list,l(1)];
+    l1_list=[l1_list,(ne.*REbetaHII(Temp).*(1.-xh1)*nh)(1)];
     T_list=[T_list,Temp(1)];
     t_list=[t_list,T*dt];
     G1_list=[G1_list,xh1(1).*GammaH1(1)];
@@ -349,4 +352,31 @@ function [N,x,xh1,eq]=PHbox(L,lum,bins,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,x
   ylabel("Rate of Change")
   #legend("Ionisation Rate","Recombination Rate")
   title("Ionisation Rate vs Recombination Rate, global, Helium 3")
+  
+  T_list=log(T_list);
+  T2_list=zeros(1,length(T_list)-1);
+  h=length(T_list)-1;
+  
+  for f=1:h
+    T2_list(f)=T_list(f+1)-T_list(f);
+    T2_list(f)=T2_list(f)/dt;
+  endfor
+  
+  T2_list=[1,T2_list];
+  
+  figure(2)
+  plot(t_list,1./T2_list)
+  
+  N=nh.+nhe.+ne;
+  
+  Density=1.5*1.38064852e-23*T_list*N(1);
+  
+  CScale=Density./l1_list;
+  HScale=Density./g_list;
+  
+  figure(3)
+  plot(t_list,CScale);
+  
+  figure(4)
+  plot(t_list,HScale);
 endfunction
