@@ -4,7 +4,7 @@
 %            Gamma (Ionisation rate, an array)
 %            Recombination (Temperature dependent function)
 %            Temp (Temperature, can be an array)
-%            nh (Number density of hudrogen atoms (regardless or ionisd or not) in cm^-3)
+%            nh (Number density of hudrogen atoms (regardless or ionisd or not) in m^-3)
 % Returns: x1 (Neutral Fraction of neutral hydrogen for next iteration)
 %
 % Compatibility: Octave (+Matlab?)
@@ -12,13 +12,12 @@
 % History:
 %   Created in 17/06/2020
 
-function x1=NFhydrogen1(xh1,gamma,recombination,Temp,nh)
+function x1=NFhydrogen1(xh1,gamma,recombination,Temp,ne)
   format short e
   x1=zeros(1,length(xh1));
-  ne=(1.-xh1).*nh; 
   non=find(gamma~=0); #Gas reached the cell
   zer=find(gamma==0); #Gas not reached the cell
-  T=recombination(Temp);
-  x1(non)=1./(gamma(non)./(ne(non).*T(non)).+1);
+  aT=recombination(Temp);
+  x1(non)=1./(gamma(non)./(ne(non).*aT(non)).+1);
   x1(zer)=xh1(zer);
 endfunction

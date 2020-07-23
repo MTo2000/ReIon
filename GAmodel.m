@@ -24,26 +24,57 @@
 %   Added minimum calculations 25/06.20
 %   Added total number calculations 28/06/20
 
-function [A,minxh,total1,total2,totalG1,totalG2]=GAmodel(N,x,nh,sigma,Nc,L,xh1,bins,vT)
+function [A,minxh,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel(N,x,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2)
   format short e
-  tau=L*nh*xh1'*sigma/Nc;
-  mask=find(tau<1e-10);
+  
+  xhe2=1.-xhe1-xhe3;
+  
+  tau1=L*nh*xh1'*sigmaH1/Nc;
+  tau2=L*nhe*xhe1'*sigmaHe1/Nc;
+  tau3=L*nhe*xhe2'*sigmaHe2/Nc;
+  Tau=tau1+tau2+tau3;
+  
   A=N;
-  B=N.*(bins-vT)*6.62607004e-34;
-  total1=zeros(1,Nc);
-  total2=zeros(1,Nc);
-  totalG1=zeros(1,Nc);
-  totalG2=zeros(1,Nc);
+  AH1=N.*(bins-vH1)*6.62607004e-34;
+  AHe1=N.*(bins-vHe1)*6.62607004e-34;
+  AHe2=N.*(bins-vHe2)*6.62607004e-34;
+  
+  mask1=find(AH1<0);
+  mask2=find(AHe1<0);
+  mask3=find(AHe2<0);
+  AH1(mask1)=0;
+  AHe1(mask2)=0;
+  AHe2(mask3)=0;
+  
+  totalH1=zeros(1,Nc);
+  totalHe1=zeros(1,Nc);
+  totalHe2=zeros(1,Nc);
+  totalGH1=zeros(1,Nc);
+  totalGHe1=zeros(1,Nc);
+  totalGHe2=zeros(1,Nc);
+  
+  pH1=e.^-tau1;
+  pHe1=e.^-tau2;
+  pHe2=e.^-tau3;
+  qH1=1.-pH1;
+  qHe1=1.-pHe1;
+  qHe2=1.-pHe2;
+  D=qH1.*pHe1.*pHe2+qHe1.*pHe2.*pH1+qHe2.*pH1.*pHe1;
+  P1=qH1.*pHe1.*pHe2.*(1.-e.^(-Tau))./D;
+  P2=qHe1.*pHe2.*pH1.*(1.-e.^(-Tau))./D;
+  P3=qHe2.*pH1.*pHe1.*(1.-e.^(-Tau))./D;
+  
   for k=1:Nc
     front=find(x>=(k-1)*L/Nc);
     back=find(x<k*L/Nc);
     aim=intersect(front,back);
-    total1(k)=sum(sum(A(aim,:)));
-    totalG1(k)=sum(sum(B(aim,:)));
-    A(aim,:)=A(aim,:).*e.^(-tau)(k,:);
-    total2(k)=sum(sum(A(aim,:)));
-    B(aim,:)=B(aim,:).*e.^(-tau)(k,:);
-    totalG2(k)=sum(sum(B(aim,:)));
+    totalH1(k)=sum(sum(A(aim,:).*P1(k,:)));
+    totalHe1(k)=sum(sum(A(aim,:).*P2(k,:)));
+    totalHe2(k)=sum(sum(A(aim,:).*P3(k,:)));
+    A(aim,:)=A(aim,:).*e.^(-Tau)(k,:);
+    totalGH1(k)=sum(sum(AH1(aim,:).*P1(k,:)));
+    totalGHe1(k)=sum(sum(AHe1(aim,:).*P2(k,:)));
+    totalGHe2(k)=sum(sum(AHe2(aim,:).*P3(k,:)));
   endfor
-  minxh=1e-10*Nc/(L*nh*sigma(1));
+  minxh=1e-10*Nc./(L*[nh*max(sigmaH1),nhe*max(sigmaHe1),nhe*max(sigmaHe2)]);
 endfunction
