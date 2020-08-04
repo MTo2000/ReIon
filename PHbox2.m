@@ -1,8 +1,9 @@
-% Title: N,x,xh1,eq=PHbox
+% Title: N,x,xh1,eq=PHbox2
 %
 % Arguments: Gas (Function that describes the gas' effect on the photons)
 %            L (Length of box in cm)
 %            lum (Luminosity function)
+%            bins (An array)
 %            alpha (The power the frequency goes)
 %            nh (Number density of Hydrogen in m^-3)
 %            ratio (Ratio of Hyydrogen atoms to Helium atoms) 
@@ -13,7 +14,6 @@
 %            xhe3i (Initial Fully Ionised Helium Fraction)
 %            T0 (Initial Temperature) 
 %            rs (Some initial distances from source) 
-%            QN (Number of nodes for Quadrature)
 % Returns: N (number matrix of photons after the first batch of photons reached the end of the box)
 %          x (Location of each photon packets)
 %          xh (Neutral Hydrogen Fraction, an array) 
@@ -32,7 +32,7 @@
 %   Temperature dependence added 01/07/20
 %   Helium included 07/07/20
 
-function [N,x,xh1,eq]=PHbox(L,lum,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,xhe3i,T0,rs,QN)
+function [N,x,xh1,eq]=PHbox2(L,lum,bins,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,xhe3i,T0,rs)
   
   format long e
   
@@ -44,17 +44,11 @@ function [N,x,xh1,eq]=PHbox(L,lum,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,xhe3i,
   endif
   
   rho=nh*1.6735575e-27*(1+4/ratio); #Mass Density in kg m^-3
-  T=1;  #Iteration number
-  c=299792458;    #Speed of light
+  T=1;
+  c=299792458;
   vH1=3.282e+15;
   vHe1=5.933e+15;
   vHe2=1.313e+16;
-  
-  [u,w]=gen_legendre_compute(0,1/vH1,QN);
-  
-  bins=flip(1./u);
-  w=flip(w);
-  
   BinH1=bins./vH1;
   BinHe1=bins./vHe1;
   BinHe2=bins./vHe2;
@@ -93,13 +87,49 @@ function [N,x,xh1,eq]=PHbox(L,lum,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,xhe3i,
   Temp=T0*ones(1,Nc);
   S=TEentropy(Temp,rho,xh1,xhe1,xhe3,ratio);
   
-  go=fopen('Gamma_list.txt','w+');
-  x1o=fopen('xh1_list.txt','w+');
-  x2o=fopen('xhe1_list.txt','w+');
-  x3o=fopen('xhe3_list.txt','w+');
-  to=fopen('Temp_list.txt','w+');
-  Go=fopen('G_list.txt','w+');
-  Lo=fopen('L_list.txt','w+');
+  if isfile('Gamma_list.txt')
+     delete 'Gamma_list.txt';
+  else
+     ;
+  endif
+  if isfile('xh1_list.txt')
+     delete 'xh1_list.txt';
+  else
+     ;
+  endif
+  if isfile('xhe1_list.txt')
+     delete 'xhe1_list.txt';
+  else
+     ;
+  endif
+  if isfile('xhe3_list.txt')
+     delete 'xhe3_list.txt';
+  else
+     ;
+  endif
+  if isfile('Temp_list.txt')
+     delete 'Temp_list.txt';
+  else
+     ;
+  endif
+  if isfile('G_list.txt')
+     delete 'G_list.txt';
+  else
+     ;
+  endif
+  if isfile('L_list.txt')
+     delete 'L_list.txt';
+  else
+     ;
+  endif
+  
+  go=fopen('Gamma_list.txt','w');
+  x1o=fopen('xh1_list.txt','w');
+  x2o=fopen('xhe1_list.txt','w');
+  x3o=fopen('xhe3_list.txt','w');
+  to=fopen('Temp_list.txt','w');
+  Go=fopen('G_list.txt','w');
+  Lo=fopen('L_list.txt','w');
   
   xh1_list=[xh1i];
   xhe1_list=[xhe1i];
@@ -127,16 +157,16 @@ function [N,x,xh1,eq]=PHbox(L,lum,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,xhe3i,
     
     N=PHsource(N,lum,bins,alpha,dt,rs,Ac,vH1);    #Source adding in photons
     N=N.*(rs./x).^2;
-    [N,mini,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel(N,x,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,w,rs);         #Gas acts on the photons
+    [N,mini,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel2(N,x,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,rs);         #Gas acts on the photons
     
-    %neg1=find(xh1<mini(1));
-    %xh1(neg1)=mini(1);
-    %neg2=find(xhe1<mini(2));
-    %xhe1(neg2)=mini(2);
-    %xhe2=1.-xhe1.-xhe3;
-    %neg3=find(xhe2<mini(3));
-    %xhe2(neg3)=mini(3);
-    %xhe3=max(1.-xhe1.-xhe2,1e-10);
+    neg1=find(xh1<mini(1));
+    xh1(neg1)=mini(1);
+    neg2=find(xhe1<mini(2));
+    xhe1(neg2)=mini(2);
+    xhe2=1.-xhe1.-xhe3;
+    neg3=find(xhe2<mini(3));
+    xhe2(neg3)=mini(3);
+    xhe3=max(1.-xhe1.-xhe2,1e-10);
     
     filled=floor(T/M);
     ext=rem(T,M);
@@ -153,16 +183,13 @@ function [N,x,xh1,eq]=PHbox(L,lum,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,xhe3i,
       else
         GammaH1(z)=totalH1(z)./(dt*Nh*xh1(z)*ext);
         GammaHe1(z)=totalHe1(z)./(dt*Nhe*xhe1(z)*ext);
-        if 1-xhe1(z)-xhe3(z)~=0
-          GammaHe2(z)=totalHe2(z)./(dt*Nhe*(1-xhe1(z)-xhe3(z))*ext);
-        else
-          GammaHe2(z)=0;
-        endif
+        GammaHe2(z)=totalHe2(z)./(dt*Nhe*(1-xhe1(z)-xhe3(z))*ext);
         GH1(z)=nh*totalGH1(z)./(dt*Nh*ext);
         GHe1(z)=nhe*totalGHe1(z)./(dt*Nhe*ext);
         GHe2(z)=nhe*totalGHe2(z)./(dt*Nhe*ext);
       endif
     endfor
+    
     
     l=TEeH(nh,nhe,xh1,xhe1,xhe3,Temp)+TEphoton(nh,nhe,xh1,xhe1,xhe3,Temp);
     ne=(1.-xh1)*nh+(1.-xhe1+xhe3)*nhe;
