@@ -14,5 +14,5 @@
 function lum=PHblackbody(bins,T,c,rad)
   k=max(size(bins));
   lum=zeros(k,1);
-  lum=(8/c^2)*6.62607004e-34*((pi*rad)^2)*(bins.^3)./(e.^(6.62607004e-34*bins/(1.38064852e-23*T)).-1);
-endfunction
+  lum=(8/c^2)*6.62607004e-34*((pi*rad)^2)*(bins.^3)./(exp(6.62607004e-34*bins/(1.38064852e-23*T))-1);
+end

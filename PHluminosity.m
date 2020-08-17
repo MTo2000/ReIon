@@ -13,4 +13,4 @@ function lum=PHluminosity(bins,alpha,vT)
   k=max(size(bins));
   lum=zeros(k,1);
   lum=1e24.*(vT./bins).^(alpha);
-endfunction
+end

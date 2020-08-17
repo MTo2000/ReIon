@@ -10,5 +10,5 @@
 %   Made Temperature array compatible 02/07/2020
 
 function aT=REalphaHII(Temp)
-  aT=2.065e-17*sqrt(1./Temp).*(6.414.-0.5*log(Temp)+8.68e-3*(Temp.^(1/3)));
-endfunction
+  aT=2.065e-17*sqrt(1./Temp).*(6.414-0.5*log(Temp)+8.68e-3*(Temp.^(1/3)));
+end

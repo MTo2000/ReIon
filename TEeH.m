@@ -12,5 +12,5 @@
 
 function L=TEeH(nh,nhe,xh1,xhe1,xhe3,Temp)
   ne=(1.-xh1)*nh+(1.-xhe1+xhe3)*nhe;
-  L=7.3e-32*ne.*nh.*xh1.*e.^(-118400./Temp);
-endfunction
+  L=7.3e-32*ne.*nh.*xh1.*exp(-118400./Temp);
+end

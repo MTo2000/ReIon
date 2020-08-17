@@ -9,5 +9,5 @@
 %   Created in 09/07/2020
 
 function bT=REbetaHeIII(Temp)
-  bT=1.14e-39*sqrt(Temp).*(6.607.-0.5*log(Temp)+7.459e-3.*(Temp.^(1/3)));
-endfunction
+  bT=1.14e-39*sqrt(Temp).*(6.607-0.5*log(Temp)+7.459e-3.*(Temp.^(1/3)));
+end

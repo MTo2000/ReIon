@@ -54,7 +54,7 @@ if(~isempty(maskp))
   end
   if(~isempty(jj))
     anu_HZ(jj) = 1. - 1./ exp(pi2./ eps(jj));
-    anu_HZ(jj) .*= y(jj).^4./ exp(4.*(1. - atan(eps(jj))./ eps(jj)));
+    anu_HZ(jj) = anu_HZ(jj).* y(jj).^4./ exp(4.*(1. - atan(eps(jj))./ eps(jj)));
     sigma(jj) = (anu_H/ (Z*Z)).*(1./ anu_HZ(jj));
   end
 end

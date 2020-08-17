@@ -15,6 +15,6 @@
 %   Includes Helium in 08/07/2020
 
 function S=TEentropy(Temp,rho,xh1,xhe1,xhe3,R)
-  mb=(1+4/R)*1.6735575e-27./(2.+(2/R).-xh1-xhe1/R+xhe3/R);
+  mb=(1+4/R)*1.6735575e-27./(2+(2/R)-xh1-xhe1/R+xhe3/R);
   S=1.38064852e-23*rho^(-2/3).*Temp./mb;
-endfunction
+end

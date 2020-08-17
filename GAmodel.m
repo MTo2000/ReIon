@@ -54,16 +54,16 @@ function [A,minxh,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmode
   totalGHe1=zeros(1,Nc);
   totalGHe2=zeros(1,Nc);
   
-  pH1=e.^-tau1;
-  pHe1=e.^-tau2;
-  pHe2=e.^-tau3;
+  pH1=exp(-tau1);
+  pHe1=exp(-tau2);
+  pHe2=exp(-tau3);
   qH1=1.-pH1;
   qHe1=1.-pHe1;
   qHe2=1.-pHe2;
   D=qH1.*pHe1.*pHe2+qHe1.*pHe2.*pH1+qHe2.*pH1.*pHe1;
-  P1=qH1.*pHe1.*pHe2.*(1.-e.^(-Tau))./D;
-  P2=qHe1.*pHe2.*pH1.*(1.-e.^(-Tau))./D;
-  P3=qHe2.*pH1.*pHe1.*(1.-e.^(-Tau))./D;
+  P1=qH1.*pHe1.*pHe2.*(1.-exp(-Tau))./D;
+  P2=qHe1.*pHe2.*pH1.*(1.-exp(-Tau))./D;
+  P3=qHe2.*pH1.*pHe1.*(1.-exp(-Tau))./D;
   
   for k=1:Nc
     front=find(x>=(k-1)*L/Nc+rs);
@@ -72,10 +72,10 @@ function [A,minxh,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmode
     totalH1(k)=sum(sum(A(aim,:).*P1(k,:).*w));
     totalHe1(k)=sum(sum(A(aim,:).*P2(k,:).*w));
     totalHe2(k)=sum(sum(A(aim,:).*P3(k,:).*w));
-    A(aim,:)=A(aim,:).*e.^(-Tau)(k,:);
+    A(aim,:)=A(aim,:).*(exp(-Tau))(k,:);
     totalGH1(k)=sum(sum(AH1(aim,:).*P1(k,:).*w));
     totalGHe1(k)=sum(sum(AHe1(aim,:).*P2(k,:).*w));
     totalGHe2(k)=sum(sum(AHe2(aim,:).*P3(k,:).*w));
-  endfor
+  end
   minxh=1e-10*Nc./(L*[nh*max(sigmaH1),nhe*max(sigmaHe1),nhe*max(sigmaHe2)]);
-endfunction
+end

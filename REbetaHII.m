@@ -10,5 +10,5 @@
 %   Made Temperature array compatible 02/07/2020
 
 function bT=REbetaHII(Temp)
-  bT=2.851e-40*sqrt(Temp).*(5.914.-0.5*log(Temp)+0.01184.*(Temp.^(1/3)));
-endfunction
+  bT=2.851e-40*sqrt(Temp).*(5.914-0.5*log(Temp)+0.01184.*(Temp.^(1/3)));
+end

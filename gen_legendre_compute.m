@@ -48,9 +48,21 @@ function [ x, w ] = gen_legendre_compute ( x1, x2, n)
   m = (n + 1)/ 2;
   xm = 0.5*(x2+x1);
   xl = 0.5*(x2-x1);
+  
+  z = cos(pi*(1 - .25)/ (n + .5));
+  p1 = 1.;
+  p2 = 0.;
+    for j = 1:n
+      p3 = p2;
+      p2 = p1;
+      p1 = ((2.*j - 1.)*z*p2 - (j - 1.)*p3)/ j;
+    end
+    pp = n*(z*p1 - p2)/ (z*z - 1.);
+    z1 = z+p1/pp;
+    
   for i = 1:m
-    z = cos(3.141592654*(i - .25)/ (n + .5));
-    do
+    z = cos(pi*(i - .25)/ (n + .5));
+    while abs(z-z1)>EPS
       p1 = 1.;
       p2 = 0.;
       for j = 1:n
@@ -61,7 +73,7 @@ function [ x, w ] = gen_legendre_compute ( x1, x2, n)
       pp = n*(z*p1 - p2)/ (z*z - 1.);
       z1 = z;
       z = z1 - p1/pp;
-    until (abs(z - z1) < EPS)
+    end
     x(i) = xm - xl*z;
     x(n + 1 - i) = xm + xl*z;
     w(i) = 2.*xl/ ((1. - z*z)*pp*pp);

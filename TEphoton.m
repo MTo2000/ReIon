@@ -13,5 +13,5 @@
 
 function L=TEphoton(nh,nhe,xh1,xhe1,xhe3,Temp)
   ne=(1.-xh1)*nh+(1.-xhe1+xhe3)*nhe;
-  L=ne.*(REbetaHII(Temp).*(1.-xh1)*nh+(REbetaHeII(Temp).*(1.-xhe1-xhe3)+REbetaHeIII(Temp).*xhe3)*nhe);
-endfunction
+  L=ne.*(REbetaHII(Temp).*(1-xh1)*nh+(REbetaHeII(Temp).*(1-xhe1-xhe3)+REbetaHeIII(Temp).*xhe3)*nhe);
+end

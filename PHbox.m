@@ -39,13 +39,13 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
   
   if xhe1i<0 || xhe3i<0
     error ("Helium fractions can't be negative")
-  endif
+  end
   if xhe1i+xhe3i>1
     error("Fraction of neutral and fully ionised Helium can't exceed 1")
-  endif
+  end
   
-  rho=nh*1.6735575e-27*(1+4/ratio); #Mass Density in kg m^-3
-  c=299792458;    #Speed of light
+  rho=nh*1.6735575e-27*(1+4/ratio); %Mass Density in kg m^-3
+  c=299792458;    %Speed of light
   vH1=3.282e+15;
   vHe1=5.933e+15;
   vHe2=1.313e+16;
@@ -65,23 +65,21 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
   BinH1=bins./vH1;
   BinHe1=bins./vHe1;
   BinHe2=bins./vHe2;
-  sigmaH1=ARAnu_HZ(BinH1,1).*1e-4; #Turning it to m^2
-  sigmaHe1=ARAnu_HeI(BinHe1).*1e-4; #Turning it to m^2
-  sigmaHe2=ARAnu_HZ(BinHe2,2).*1e-4; #Turning it to m^2
+  sigmaH1=ARAnu_HZ(BinH1,1)*1e-4; %Turning it to m^2
+  sigmaHe1=ARAnu_HeI(BinHe1)*1e-4; %Turning it to m^2
+  sigmaHe2=ARAnu_HZ(BinHe2,2)*1e-4; %Turning it to m^2
   a=max([max(sigmaH1),max(sigmaHe1),max(sigmaHe2)]);
   recommend=10*(nh*xh1i*a*L);
   display(["The recommended number of cells is around "  num2str(recommend)])
   Nc=input("Please enter the number of cells desired: ");
-  if floor(Nc)==Nc                  #Check integer
-    ;
-  elseif
+  if floor(Nc)==Nc                  %Check integer
+  else
     error("Number of cells is not an integer")
-  endif
+  end
   if xh1i<=1 && xh1i>0
-    ;
-  elseif
+  else
     error("Neutral fraction must be between 0 and 1")
-  endif
+  end
   dt=L/(Nc * c);
   modifier=dt/2*1e-10; 
   display(["The unmodified timestep is " num2str(dt)]);
@@ -92,11 +90,12 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
   T=1
   eq=zeros(1,Nc);
   x=zeros(1,0);
-  N=zeros(0,size(bins)(2));
+  s=size(bins);
+  N=zeros(0,s(2));
   nhe=nh/ratio;
-  Nh=nh*Ac*L/Nc;                        #Total number of gas in each cell
+  Nh=nh*Ac*L/Nc;                        %Total number of gas in each cell
   Nhe=Nh/ratio;
-  xh1=xh1i*ones(1,Nc);                 #Initial fractions for all cells
+  xh1=xh1i*ones(1,Nc);                 %Initial fractions for all cells
   xhe1=xhe1i*ones(1,Nc);
   xhe3=xhe3i*ones(1,Nc);
   Temp=T0*ones(1,Nc);
@@ -136,9 +135,9 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
       GHe1=zeros(1,Nc);
       GHe2=zeros(1,Nc);
     
-      N=PHsource(N,PHblackbody(bins,1e+5,c,rad),dt,rs,Ac);    #Source adding in photons
+      N=PHsource(N,PHblackbody(bins,1e+5,c,rad),dt,rs,Ac);    %Source adding in photons
       N=N.*(rs./x).^2;
-      [N,mini,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel2(N,x,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,w);         #Gas acts on the photons
+      [N,mini,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel2(N,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,w);         %Gas acts on the photons
     
       %neg1=find(xh1<mini(1));
       %xh1(neg1)=mini(1);
@@ -181,21 +180,25 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
       %xhe3=1.-xhe1.-xhe2;
     
       T=T+1
-      x=c*dt.+x;
+      x=c*dt+x;
     
-      ne=(1.-xh1)*nh+(1.-xhe1+xhe3)*nhe;
+      ne=(1-xh1)*nh+(1.-xhe1+xhe3)*nhe;
+      b2=REbetaHII(Temp);
+      a2=REalphaHII(Temp);
+      ae2=REalphaHeII(Temp);
+      ae3=REalphaHeIII(Temp);
       xh1_list=[xh1_list,xh1(1)];
       g_list=[g_list,G(1)];
       l_list=[l_list,l(1)];
-      l1_list=[l1_list,(ne.*REbetaHII(Temp).*(1.-xh1)*nh)(1)];
+      l1_list=[l1_list,ne(1)*b2(1)*(1-xh1(1))*nh];
       T_list=[T_list,Temp(1)];
       t_list=[t_list,T*dt];
-      G1_list=[G1_list,xh1(1).*GammaH1(1)];
-      R1_list=[R1_list,((REalphaHII(Temp)).*(1.-xh1).*ne)(1)];
-      G2_list=[G2_list,xhe1(1).*GammaHe1(1)];
-      R2_list=[R2_list,((REalphaHeII(Temp)).*xhe2.*ne)(1)];
-      G3_list=[G3_list,xhe2(1).*GammaHe2(1)];
-      R3_list=[R3_list,((REalphaHeIII(Temp)).*xhe3.*ne)(1)];
+      G1_list=[G1_list,xh1(1)*GammaH1(1)];
+      R1_list=[R1_list,a2(1)*(1-xh1(1))*ne(1)];
+      G2_list=[G2_list,xhe1(1)*GammaHe1(1)];
+      R2_list=[R2_list,ae2(1)*xhe2(1)*ne(1)];
+      G3_list=[G3_list,xhe2(1)*GammaHe2(1)];
+      R3_list=[R3_list,ae3(1)*xhe3(1)*ne(1)];
     
       fprintf(go,"Time = %2e     ",T*dt);
       fprintf(go,"%2e  ",GammaH1);
@@ -219,7 +222,7 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
       fprintf(Lo,"%2e  ",l);
       fprintf(Lo,"\n");
   
-    endwhile
+    end
   else
     while T<it
       x=[rs;x];
@@ -231,9 +234,9 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
       GHe1=zeros(1,Nc);
       GHe2=zeros(1,Nc);
     
-      N=PHsource(N,PHblackbody(bins,1e+5,c,rad),dt,rs,Ac);    #Source adding in photons
+      N=PHsource(N,PHblackbody(bins,1e+5,c,rad),dt,rs,Ac);    %Source adding in photons
       N=N.*(rs./x).^2;
-      [N,mini,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel(N,x,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,w,rs);         #Gas acts on the photons
+      [N,mini,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel(N,x,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,w,rs);         %Gas acts on the photons
     
       %neg1=find(xh1<mini(1));
       %xh1(neg1)=mini(1);
@@ -256,7 +259,7 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
             GammaHe2(z)=totalHe2(z)./(dt*Nhe*(1-xhe1(z)-xhe3(z))*M);
           else
             GammaHe2(z)=0;
-          endif
+          end
           GHe1(z)=nhe*totalGHe1(z)./(dt*Nhe*M);
           GHe2(z)=nhe*totalGHe2(z)./(dt*Nhe*M);
         else
@@ -266,12 +269,12 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
             GammaHe2(z)=totalHe2(z)./(dt*Nhe*(1-xhe1(z)-xhe3(z))*ext);
           else
             GammaHe2(z)=0;
-          endif
+          end
           GH1(z)=nh*totalGH1(z)./(dt*Nh*ext);
           GHe1(z)=nhe*totalGHe1(z)./(dt*Nhe*ext);
           GHe2(z)=nhe*totalGHe2(z)./(dt*Nhe*ext);
-        endif
-      endfor
+        end
+      end
     
       l=TEeH(nh,nhe,xh1,xhe1,xhe3,Temp)+TEphoton(nh,nhe,xh1,xhe1,xhe3,Temp);
       ne=(1.-xh1)*nh+(1.-xhe1+xhe3)*nhe;
@@ -281,6 +284,7 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
       G=GH1+GHe1+GHe2;
       S=S+dt*2/3*rho^(-5/3)*(G-l);
       Temp=TEtemp(S,rho,xh1,xhe1,xhe3,ratio);
+      xhe2=1-xhe1-xhe3;
 
       %neg1=find(xh1<mini(1));
       %xh1(neg1)=mini(1);
@@ -292,22 +296,26 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
       %xhe3=1.-xhe1.-xhe2;
     
       T=T+1
-      x=c*dt.+x;
+      x=c*dt+x;
     
-      ne=(1.-xh1)*nh+(1.-xhe1+xhe3)*nhe;
+      ne=(1-xh1)*nh+(1.-xhe1+xhe3)*nhe;
+      b2=REbetaHII(Temp);
+      a2=REalphaHII(Temp);
+      ae2=REalphaHeII(Temp);
+      ae3=REalphaHeIII(Temp);
       xh1_list=[xh1_list,xh1(1)];
       g_list=[g_list,G(1)];
       l_list=[l_list,l(1)];
-      l1_list=[l1_list,(ne.*REbetaHII(Temp).*(1.-xh1)*nh)(1)];
+      l1_list=[l1_list,ne(1)*b2(1)*(1-xh1(1))*nh];
       T_list=[T_list,Temp(1)];
       t_list=[t_list,T*dt];
-      G1_list=[G1_list,xh1(1).*GammaH1(1)];
-      R1_list=[R1_list,((REalphaHII(Temp)).*(1.-xh1).*ne)(1)];
-      G2_list=[G2_list,xhe1(1).*GammaHe1(1)];
-      R2_list=[R2_list,((REalphaHeII(Temp)).*(1.-xhe1-xhe3).*ne)(1)];
-      G3_list=[G3_list,(1.-xhe1-xhe3)(1).*GammaHe2(1)];
-      R3_list=[R3_list,((REalphaHeIII(Temp)).*xhe3.*ne)(1)];
-    
+      G1_list=[G1_list,xh1(1)*GammaH1(1)];
+      R1_list=[R1_list,a2(1)*(1-xh1(1))*ne(1)];
+      G2_list=[G2_list,xhe1(1)*GammaHe1(1)];
+      R2_list=[R2_list,ae2(1)*xhe2(1)*ne(1)];
+      G3_list=[G3_list,xhe2(1)*GammaHe2(1)];
+      R3_list=[R3_list,ae3(1)*xhe3(1)*ne(1)];
+      
       fprintf(go,"Time = %2e     ",T*dt);
       fprintf(go,"%2e  ",GammaH1);
       fprintf(go,"\n");
@@ -330,8 +338,8 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
       fprintf(Lo,"%2e  ",l);
       fprintf(Lo,"\n");
   
-    endwhile
-  endif
+    end
+  end
   
   fclose(go);
   fclose(x1o);
@@ -354,14 +362,14 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
   plot(t_list,xh1_list);
   axis([0,limx,0,1.2*max(xh1_list)])
   xlabel("Time in seconds")
-  #legend("eq(xh1)/xh1(t)")
+  %legend("eq(xh1)/xh1(t)")
   title("How quickly it is approaching equilibrium value")
   
   subplot(2,5,2)
   plot(t_list,ratio0);
   axis([0,limx,0,1.2*max(ratio0)])
   xlabel("Time in seconds")
-  #legend("Cooling Rate/Heating Rate")
+  %legend("Cooling Rate/Heating Rate")
   title("Heating Rate vs Cooling Rate ratio")
   
   subplot(2,5,3)
@@ -369,10 +377,10 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
   hold on
   plot(t_list,l_list);
   hold off
-  axis([0,limx])
+  axis([0,limx,0,1.2*max(g_list)])
   xlabel("Time in seconds")
   ylabel("Energy change in Joules per second")
-  #legend("Heating Rate","Cooling Rate")
+  %legend("Heating Rate","Cooling Rate")
   title("Heating Rate vs Cooling Rate, global")
   
   subplot(2,5,6)
@@ -380,14 +388,14 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
   axis([0,limx,0,1.2*max(T_list)])
   xlabel("Time in seconds")
   ylabel("Temperature in K")
-  #legend("Temperature(t)")
+  %legend("Temperature(t)")
   title("Temperature")
   
   subplot(2,5,4)
   plot(t_list,ratio1);
   axis([0,limx,0,1.2*max(ratio1)])
   xlabel("Time in seconds")
-  #legend("Recombination Rate/Ionisation Rate")
+  %legend("Recombination Rate/Ionisation Rate")
   title("Ionisation Rate vs Recombination Rate ratio, Hydrogen 1")
   
   subplot(2,5,5)
@@ -395,17 +403,17 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
   hold on
   plot(t_list,R1_list);
   hold off
-  axis([0,limx])
+  axis([0,limx,0,1.2*max(G1_list)])
   xlabel("Time in seconds")
   ylabel("Rate of Change")
-  #legend("Ionisation Rate","Recombination Rate")
+  %legend("Ionisation Rate","Recombination Rate")
   title("Ionisation Rate vs Recombination Rate, global, Hydrogen 1")
   
   subplot(2,5,7)
   plot(t_list,ratio2);
   axis([0,limx,0,1.2*max(ratio2)])
   xlabel("Time in seconds")
-  #legend("Recombination Rate/Ionisation Rate")
+  %legend("Recombination Rate/Ionisation Rate")
   title("Ionisation Rate vs Recombination Rate ratio, Helium 1")
   
   subplot(2,5,8)
@@ -413,17 +421,17 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
   hold on
   plot(t_list,R2_list);
   hold off
-  axis([0,limx])
+  axis([0,limx,0,1.2*max(G2_list)])
   xlabel("Time in seconds")
   ylabel("Rate of Change")
-  #legend("Ionisation Rate","Recombination Rate")
+  %legend("Ionisation Rate","Recombination Rate")
   title("Ionisation Rate vs Recombination Rate, global, Helium 1")
   
   subplot(2,5,9)
   plot(t_list,ratio3);
   axis([0,limx,0,1.2*max(ratio3)])
   xlabel("Time in seconds")
-  #legend("Recombination Rate/Ionisation Rate")
+  %legend("Recombination Rate/Ionisation Rate")
   title("Ionisation Rate vs Recombination Rate ratio, Helium 3")
   
   subplot(2,5,10)
@@ -431,10 +439,10 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
   hold on
   plot(t_list,R3_list);
   hold off
-  axis([0,limx])
+  axis([0,limx,0,1.2*max(G3_list)])
   xlabel("Time in seconds")
   ylabel("Rate of Change")
-  #legend("Ionisation Rate","Recombination Rate")
+  %legend("Ionisation Rate","Recombination Rate")
   title("Ionisation Rate vs Recombination Rate, global, Helium 3")
   
   T_list=log(T_list);
@@ -444,23 +452,23 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
   for f=1:h
     T2_list(f)=T_list(f+1)-T_list(f);
     T2_list(f)=T2_list(f)/dt;
-  endfor
+  end
   
   T2_list=[1,T2_list];
   
   figure(2)
   plot(t_list,1./T2_list)
   
-  N=nh.+nhe.+ne;
+  %N=nh+nhe+ne;
   
-  Density=1.5*1.38064852e-23*T_list*N(1);
+  %Density=1.5*1.38064852e-23*T_list*N(1);
   
-  CScale=Density./l1_list;
-  HScale=Density./g_list;
+  %CScale=Density./l1_list;
+  %HScale=Density./g_list;
   
-  figure(3)
-  plot(t_list,CScale);
+  %figure(3)
+  %plot(t_list,CScale);
   
-  figure(4)
-  plot(t_list,HScale);
-endfunction
+  %figure(4)
+  %plot(t_list,HScale);
+end
