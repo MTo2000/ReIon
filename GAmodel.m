@@ -69,13 +69,13 @@ function [A,minxh,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmode
     front=find(x>=(k-1)*L/Nc+rs);
     back=find(x<k*L/Nc+rs);
     aim=intersect(front,back);
-    totalH1(k)=sum(sum(A(aim,:).*P1(k,:).*w.*bins));
-    totalHe1(k)=sum(sum(A(aim,:).*P2(k,:).*w.*bins));
-    totalHe2(k)=sum(sum(A(aim,:).*P3(k,:).*w.*bins));
+    totalH1(k)=sum(sum(A(aim,:).*P1(k,:).*w));
+    totalHe1(k)=sum(sum(A(aim,:).*P2(k,:).*w));
+    totalHe2(k)=sum(sum(A(aim,:).*P3(k,:).*w));
     A(aim,:)=A(aim,:).*e.^(-Tau)(k,:);
-    totalGH1(k)=sum(sum(AH1(aim,:).*P1(k,:).*w.*bins));
-    totalGHe1(k)=sum(sum(AHe1(aim,:).*P2(k,:).*w.*bins));
-    totalGHe2(k)=sum(sum(AHe2(aim,:).*P3(k,:).*w.*bins));
+    totalGH1(k)=sum(sum(AH1(aim,:).*P1(k,:).*w));
+    totalGHe1(k)=sum(sum(AHe1(aim,:).*P2(k,:).*w));
+    totalGHe2(k)=sum(sum(AHe2(aim,:).*P3(k,:).*w));
   endfor
   minxh=1e-10*Nc./(L*[nh*max(sigmaH1),nhe*max(sigmaHe1),nhe*max(sigmaHe2)]);
 endfunction

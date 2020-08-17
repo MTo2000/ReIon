@@ -2,18 +2,17 @@
 %
 % Arguments: Gas (Function that describes the gas' effect on the photons)
 %            L (Length of box in cm)
-%            lum (Luminosity function)
-%            alpha (The power the frequency goes)
 %            nh (Number density of Hydrogen in m^-3)
 %            ratio (Ratio of Hyydrogen atoms to Helium atoms) 
 %            Ac (Cross section area of the box/cylinder in m^3)
-%            iterations (Number of iterations)
+%            duration (How long will the simulation take place)
 %            xh1i (Initial Neutral Hydrogen Fraction)
 %            xhe1i (Initial Neutral Helium Fraction)
 %            xhe3i (Initial Fully Ionised Helium Fraction)
 %            T0 (Initial Temperature) 
 %            rs (Some initial distances from source) 
 %            QN (Number of nodes for Quadrature)
+%            rad (Radius of source)
 % Returns: N (number matrix of photons after the first batch of photons reached the end of the box)
 %          x (Location of each photon packets)
 %          xh (Neutral Hydrogen Fraction, an array) 
@@ -31,8 +30,10 @@
 %   Write xh1 in a separate file 30/06/20
 %   Temperature dependence added 01/07/20
 %   Helium included 07/07/20
+%   Exclusive to Blackbody tweek 10/08/2020
+%   Special case when M==1 14/08/2020
 
-function [N,x,xh1,eq]=PHbox(L,lum,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,xhe3i,T0,rs,QN)
+function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad)
   
   format long e
   
@@ -44,16 +45,22 @@ function [N,x,xh1,eq]=PHbox(L,lum,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,xhe3i,
   endif
   
   rho=nh*1.6735575e-27*(1+4/ratio); #Mass Density in kg m^-3
-  T=1;  #Iteration number
   c=299792458;    #Speed of light
   vH1=3.282e+15;
   vHe1=5.933e+15;
   vHe2=1.313e+16;
   
-  [u,w]=gen_legendre_compute(0,1/vH1,QN);
+  [bin1,w1]=gen_legendre_compute(vH1,vHe1,QN);
+  [bin2,w2]=gen_legendre_compute(vHe1,vHe2,QN);
+  [u,w3]=gen_legendre_compute(0,1/vHe2,QN);
   
-  bins=flip(1./u);
-  w=flip(w);
+  bin3=flip(1./u);
+  w1=w1./bin1;
+  w2=w2./bin2;
+  w3=flip(w3).*bin3;
+  
+  bins=[bin1,bin2,bin3];
+  w=[w1,w2,w3];
   
   BinH1=bins./vH1;
   BinHe1=bins./vHe1;
@@ -81,6 +88,8 @@ function [N,x,xh1,eq]=PHbox(L,lum,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,xhe3i,
   display(["The recommended modifier is " num2str(modifier)]);
   M=input("Please enter the modifier desired: ");
   dt=dt/M;
+  it=ceil(duration/dt)
+  T=1
   eq=zeros(1,Nc);
   x=zeros(1,0);
   N=zeros(0,size(bins)(2));
@@ -115,113 +124,214 @@ function [N,x,xh1,eq]=PHbox(L,lum,alpha,nh,ratio,Ac,iterations,xh1i,xhe1i,xhe3i,
   R2_list=[0];
   G3_list=[0];
   R3_list=[0];
-  while T<iterations
-    x=[rs;x];
-    
-    GammaH1=zeros(1,Nc);
-    GammaHe1=zeros(1,Nc);
-    GammaHe2=zeros(1,Nc);
-    GH1=zeros(1,Nc);
-    GHe1=zeros(1,Nc);
-    GHe2=zeros(1,Nc);
-    
-    N=PHsource(N,lum,bins,alpha,dt,rs,Ac,vH1);    #Source adding in photons
-    N=N.*(rs./x).^2;
-    [N,mini,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel(N,x,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,w,rs);         #Gas acts on the photons
-    
-    %neg1=find(xh1<mini(1));
-    %xh1(neg1)=mini(1);
-    %neg2=find(xhe1<mini(2));
-    %xhe1(neg2)=mini(2);
-    %xhe2=1.-xhe1.-xhe3;
-    %neg3=find(xhe2<mini(3));
-    %xhe2(neg3)=mini(3);
-    %xhe3=max(1.-xhe1.-xhe2,1e-10);
-    
-    filled=floor(T/M);
-    ext=rem(T,M);
-    nonz=find(totalH1~=0);
-    
-    for z=nonz
-      if z<=filled
-        GammaH1(z)=totalH1(z)./(dt*Nh*xh1(z)*M);
-        GammaHe1(z)=totalHe1(z)./(dt*Nhe*xhe1(z)*M);
-        GammaHe2(z)=totalHe2(z)./(dt*Nhe*(1-xhe1(z)-xhe3(z))*M);
-        GH1(z)=nh*totalGH1(z)./(dt*Nh*M);
-        GHe1(z)=nhe*totalGHe1(z)./(dt*Nhe*M);
-        GHe2(z)=nhe*totalGHe2(z)./(dt*Nhe*M);
-      else
-        GammaH1(z)=totalH1(z)./(dt*Nh*xh1(z)*ext);
-        GammaHe1(z)=totalHe1(z)./(dt*Nhe*xhe1(z)*ext);
-        if 1-xhe1(z)-xhe3(z)~=0
-          GammaHe2(z)=totalHe2(z)./(dt*Nhe*(1-xhe1(z)-xhe3(z))*ext);
-        else
-          GammaHe2(z)=0;
-        endif
-        GH1(z)=nh*totalGH1(z)./(dt*Nh*ext);
-        GHe1(z)=nhe*totalGHe1(z)./(dt*Nhe*ext);
-        GHe2(z)=nhe*totalGHe2(z)./(dt*Nhe*ext);
-      endif
-    endfor
-    
-    l=TEeH(nh,nhe,xh1,xhe1,xhe3,Temp)+TEphoton(nh,nhe,xh1,xhe1,xhe3,Temp);
-    ne=(1.-xh1)*nh+(1.-xhe1+xhe3)*nhe;
-    xh1=xh1+dt*(-GammaH1.*xh1+REalphaHII(Temp).*(1.-xh1).*ne);
-    xhe1=xhe1+dt*(-GammaHe1.*xhe1+REalphaHeII(Temp).*(1.-xhe1-xhe3).*ne);
-    xhe3=xhe3+dt*(GammaHe2.*(1-xhe1-xhe3)-REalphaHeIII(Temp).*xhe3.*ne);
-    G=GH1+GHe1+GHe2;
-    S=S+dt*2/3*rho^(-5/3)*(G-l);
-    Temp=TEtemp(S,rho,xh1,xhe1,xhe3,ratio);
-
-    neg1=find(xh1<mini(1));
-    xh1(neg1)=mini(1);
-    neg2=find(xhe1<mini(2));
-    xhe1(neg2)=mini(2);
-    xhe2=1.-xhe1.-xhe3;
-    neg3=find(xhe2<mini(3));
-    xhe2(neg3)=mini(3);
-    xhe3=1.-xhe1.-xhe2;
-    
-    T=T+1;
-    x=c*dt.+x;
-    
-    ne=(1.-xh1)*nh+(1.-xhe1+xhe3)*nhe;
-    xh1_list=[xh1_list,xh1(1)];
-    g_list=[g_list,G(1)];
-    l_list=[l_list,l(1)];
-    l1_list=[l1_list,(ne.*REbetaHII(Temp).*(1.-xh1)*nh)(1)];
-    T_list=[T_list,Temp(1)];
-    t_list=[t_list,T*dt];
-    G1_list=[G1_list,xh1(1).*GammaH1(1)];
-    R1_list=[R1_list,((REalphaHII(Temp)).*(1.-xh1).*ne)(1)];
-    G2_list=[G2_list,xhe1(1).*GammaHe1(1)];
-    R2_list=[R2_list,((REalphaHeII(Temp)).*(1.-xhe1-xhe3).*ne)(1)];
-    G3_list=[G3_list,(1.-xhe1-xhe3)(1).*GammaHe2(1)];
-    R3_list=[R3_list,((REalphaHeIII(Temp)).*xhe3.*ne)(1)];
-    
-    fprintf(go,"Time = %2e     ",T*dt);
-    fprintf(go,"%2e  ",GammaH1);
-    fprintf(go,"\n");
-    fprintf(x1o,"Time = %2e     ",T*dt);
-    fprintf(x1o,"%2e  ",xh1);
-    fprintf(x1o,"\n");
-    fprintf(x2o,"Time = %2e     ",T*dt);
-    fprintf(x2o,"%2e  ",xhe1);
-    fprintf(x2o,"\n");
-    fprintf(x3o,"Time = %2e     ",T*dt);
-    fprintf(x3o,"%2e  ",xhe3);
-    fprintf(x3o,"\n");
-    fprintf(to,"Time = %2e     ",T*dt);
-    fprintf(to,"%2e  ",Temp);
-    fprintf(to,"\n");
-    fprintf(Go,"Time = %2e     ",T*dt);
-    fprintf(Go,"%2e  ",G);
-    fprintf(Go,"\n");
-    fprintf(Lo,"Time = %2e     ",T*dt);
-    fprintf(Lo,"%2e  ",l);
-    fprintf(Lo,"\n");
   
-  endwhile
+  if M==1
+    while T<it
+      x=[rs;x];
+    
+      GammaH1=zeros(1,Nc);
+      GammaHe1=zeros(1,Nc);
+      GammaHe2=zeros(1,Nc);
+      GH1=zeros(1,Nc);
+      GHe1=zeros(1,Nc);
+      GHe2=zeros(1,Nc);
+    
+      N=PHsource(N,PHblackbody(bins,1e+5,c,rad),dt,rs,Ac);    #Source adding in photons
+      N=N.*(rs./x).^2;
+      [N,mini,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel2(N,x,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,w);         #Gas acts on the photons
+    
+      %neg1=find(xh1<mini(1));
+      %xh1(neg1)=mini(1);
+      %neg2=find(xhe1<mini(2));
+      %xhe1(neg2)=mini(2);
+      %xhe2=1.-xhe1.-xhe3;
+      %neg3=find(xhe2<mini(3));
+      %xhe2(neg3)=mini(3);
+      %xhe3=max(1.-xhe1.-xhe2,1e-10);
+      nonz=find(totalH1~=0);
+       
+      xhe2=1-xhe1-xhe3;
+      
+      GammaH1(nonz)=totalH1(nonz)./(dt*Nh*xh1(nonz));
+      GammaHe1(nonz)=totalHe1(nonz)./(dt*Nhe*xhe1(nonz));
+      non2=find(xhe2~=0);
+      non3=intersect(nonz,non2);
+      GammaHe2(non3)=totalHe2(non3)./(dt*Nhe*xhe2(non3));
+      GH1(nonz)=nh*totalGH1(nonz)./(dt*Nh);
+      GHe1(nonz)=nhe*totalGHe1(nonz)./(dt*Nhe);
+      GHe2(nonz)=nhe*totalGHe2(nonz)./(dt*Nhe);  
+
+    
+      l=TEeH(nh,nhe,xh1,xhe1,xhe3,Temp)+TEphoton(nh,nhe,xh1,xhe1,xhe3,Temp);
+      ne=(1.-xh1)*nh+(1.-xhe1+xhe3)*nhe;
+      xh1=xh1+dt*(-GammaH1.*xh1+REalphaHII(Temp).*(1.-xh1).*ne);
+      xhe1=xhe1+dt*(-GammaHe1.*xhe1+REalphaHeII(Temp).*xhe2.*ne);
+      xhe3=xhe3+dt*(GammaHe2.*xhe2-REalphaHeIII(Temp).*xhe3.*ne);
+      G=GH1+GHe1+GHe2;
+      S=S+dt*2/3*rho^(-5/3)*(G-l);
+      Temp=TEtemp(S,rho,xh1,xhe1,xhe3,ratio);
+      xhe2=1-xhe1-xhe3;
+      %neg1=find(xh1<mini(1));
+      %xh1(neg1)=mini(1);
+      %neg2=find(xhe1<mini(2));
+      %xhe1(neg2)=mini(2);
+      %xhe2=1.-xhe1.-xhe3;
+      %neg3=find(xhe2<mini(3));
+      %xhe2(neg3)=mini(3);
+      %xhe3=1.-xhe1.-xhe2;
+    
+      T=T+1
+      x=c*dt.+x;
+    
+      ne=(1.-xh1)*nh+(1.-xhe1+xhe3)*nhe;
+      xh1_list=[xh1_list,xh1(1)];
+      g_list=[g_list,G(1)];
+      l_list=[l_list,l(1)];
+      l1_list=[l1_list,(ne.*REbetaHII(Temp).*(1.-xh1)*nh)(1)];
+      T_list=[T_list,Temp(1)];
+      t_list=[t_list,T*dt];
+      G1_list=[G1_list,xh1(1).*GammaH1(1)];
+      R1_list=[R1_list,((REalphaHII(Temp)).*(1.-xh1).*ne)(1)];
+      G2_list=[G2_list,xhe1(1).*GammaHe1(1)];
+      R2_list=[R2_list,((REalphaHeII(Temp)).*xhe2.*ne)(1)];
+      G3_list=[G3_list,xhe2(1).*GammaHe2(1)];
+      R3_list=[R3_list,((REalphaHeIII(Temp)).*xhe3.*ne)(1)];
+    
+      fprintf(go,"Time = %2e     ",T*dt);
+      fprintf(go,"%2e  ",GammaH1);
+      fprintf(go,"\n");
+      fprintf(x1o,"Time = %2e     ",T*dt);
+      fprintf(x1o,"%2e  ",xh1);
+      fprintf(x1o,"\n");
+      fprintf(x2o,"Time = %2e     ",T*dt);
+      fprintf(x2o,"%2e  ",xhe1);
+      fprintf(x2o,"\n");
+      fprintf(x3o,"Time = %2e     ",T*dt);
+      fprintf(x3o,"%2e  ",xhe3);
+      fprintf(x3o,"\n");
+      fprintf(to,"Time = %2e     ",T*dt);
+      fprintf(to,"%2e  ",Temp);
+      fprintf(to,"\n");
+      fprintf(Go,"Time = %2e     ",T*dt);
+      fprintf(Go,"%2e  ",G);
+      fprintf(Go,"\n");
+      fprintf(Lo,"Time = %2e     ",T*dt);
+      fprintf(Lo,"%2e  ",l);
+      fprintf(Lo,"\n");
+  
+    endwhile
+  else
+    while T<it
+      x=[rs;x];
+    
+      GammaH1=zeros(1,Nc);
+      GammaHe1=zeros(1,Nc);
+      GammaHe2=zeros(1,Nc);
+      GH1=zeros(1,Nc);
+      GHe1=zeros(1,Nc);
+      GHe2=zeros(1,Nc);
+    
+      N=PHsource(N,PHblackbody(bins,1e+5,c,rad),dt,rs,Ac);    #Source adding in photons
+      N=N.*(rs./x).^2;
+      [N,mini,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel(N,x,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,w,rs);         #Gas acts on the photons
+    
+      %neg1=find(xh1<mini(1));
+      %xh1(neg1)=mini(1);
+      %neg2=find(xhe1<mini(2));
+      %xhe1(neg2)=mini(2);
+      %xhe2=1.-xhe1.-xhe3;
+      %neg3=find(xhe2<mini(3));
+      %xhe2(neg3)=mini(3);
+      %xhe3=max(1.-xhe1.-xhe2,1e-10);
+    
+      filled=floor(T/M);
+      ext=rem(T,M);
+      nonz=find(totalH1~=0);
+    
+      for z=nonz
+        if z<=filled
+          GammaH1(z)=totalH1(z)./(dt*Nh*xh1(z)*M);
+          GammaHe1(z)=totalHe1(z)./(dt*Nhe*xhe1(z)*M);
+          if 1-xhe1(z)-xhe3(z)~=0
+            GammaHe2(z)=totalHe2(z)./(dt*Nhe*(1-xhe1(z)-xhe3(z))*M);
+          else
+            GammaHe2(z)=0;
+          endif
+          GHe1(z)=nhe*totalGHe1(z)./(dt*Nhe*M);
+          GHe2(z)=nhe*totalGHe2(z)./(dt*Nhe*M);
+        else
+          GammaH1(z)=totalH1(z)./(dt*Nh*xh1(z)*ext);
+          GammaHe1(z)=totalHe1(z)./(dt*Nhe*xhe1(z)*ext);
+          if 1-xhe1(z)-xhe3(z)~=0
+            GammaHe2(z)=totalHe2(z)./(dt*Nhe*(1-xhe1(z)-xhe3(z))*ext);
+          else
+            GammaHe2(z)=0;
+          endif
+          GH1(z)=nh*totalGH1(z)./(dt*Nh*ext);
+          GHe1(z)=nhe*totalGHe1(z)./(dt*Nhe*ext);
+          GHe2(z)=nhe*totalGHe2(z)./(dt*Nhe*ext);
+        endif
+      endfor
+    
+      l=TEeH(nh,nhe,xh1,xhe1,xhe3,Temp)+TEphoton(nh,nhe,xh1,xhe1,xhe3,Temp);
+      ne=(1.-xh1)*nh+(1.-xhe1+xhe3)*nhe;
+      xh1=xh1+dt*(-GammaH1.*xh1+REalphaHII(Temp).*(1.-xh1).*ne);
+      xhe1=xhe1+dt*(-GammaHe1.*xhe1+REalphaHeII(Temp).*(1.-xhe1-xhe3).*ne);
+      xhe3=xhe3+dt*(GammaHe2.*(1-xhe1-xhe3)-REalphaHeIII(Temp).*xhe3.*ne);
+      G=GH1+GHe1+GHe2;
+      S=S+dt*2/3*rho^(-5/3)*(G-l);
+      Temp=TEtemp(S,rho,xh1,xhe1,xhe3,ratio);
+
+      %neg1=find(xh1<mini(1));
+      %xh1(neg1)=mini(1);
+      %neg2=find(xhe1<mini(2));
+      %xhe1(neg2)=mini(2);
+      %xhe2=1.-xhe1.-xhe3;
+      %neg3=find(xhe2<mini(3));
+      %xhe2(neg3)=mini(3);
+      %xhe3=1.-xhe1.-xhe2;
+    
+      T=T+1
+      x=c*dt.+x;
+    
+      ne=(1.-xh1)*nh+(1.-xhe1+xhe3)*nhe;
+      xh1_list=[xh1_list,xh1(1)];
+      g_list=[g_list,G(1)];
+      l_list=[l_list,l(1)];
+      l1_list=[l1_list,(ne.*REbetaHII(Temp).*(1.-xh1)*nh)(1)];
+      T_list=[T_list,Temp(1)];
+      t_list=[t_list,T*dt];
+      G1_list=[G1_list,xh1(1).*GammaH1(1)];
+      R1_list=[R1_list,((REalphaHII(Temp)).*(1.-xh1).*ne)(1)];
+      G2_list=[G2_list,xhe1(1).*GammaHe1(1)];
+      R2_list=[R2_list,((REalphaHeII(Temp)).*(1.-xhe1-xhe3).*ne)(1)];
+      G3_list=[G3_list,(1.-xhe1-xhe3)(1).*GammaHe2(1)];
+      R3_list=[R3_list,((REalphaHeIII(Temp)).*xhe3.*ne)(1)];
+    
+      fprintf(go,"Time = %2e     ",T*dt);
+      fprintf(go,"%2e  ",GammaH1);
+      fprintf(go,"\n");
+      fprintf(x1o,"Time = %2e     ",T*dt);
+      fprintf(x1o,"%2e  ",xh1);
+      fprintf(x1o,"\n");
+      fprintf(x2o,"Time = %2e     ",T*dt);
+      fprintf(x2o,"%2e  ",xhe1);
+      fprintf(x2o,"\n");
+      fprintf(x3o,"Time = %2e     ",T*dt);
+      fprintf(x3o,"%2e  ",xhe3);
+      fprintf(x3o,"\n");
+      fprintf(to,"Time = %2e     ",T*dt);
+      fprintf(to,"%2e  ",Temp);
+      fprintf(to,"\n");
+      fprintf(Go,"Time = %2e     ",T*dt);
+      fprintf(Go,"%2e  ",G);
+      fprintf(Go,"\n");
+      fprintf(Lo,"Time = %2e     ",T*dt);
+      fprintf(Lo,"%2e  ",l);
+      fprintf(Lo,"\n");
+  
+    endwhile
+  endif
   
   fclose(go);
   fclose(x1o);

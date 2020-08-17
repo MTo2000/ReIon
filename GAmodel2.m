@@ -1,4 +1,4 @@
-% Title: A=GAmodel
+% Title: A=GAmodel2
 %
 % Arguments: N (number matrix of photons before the effects of the gas)
 %            x (array recording the position of each photon packets)
@@ -20,12 +20,9 @@
 % Compatibility: Octave (+Matlab?)
 % Author: To Kwok Hei Matthew
 % History:
-%   Created in 09/06/2020
-%   Make tau an array 12/06/20
-%   Added minimum calculations 25/06.20
-%   Added total number calculations 28/06/20
+%   Created in 17/08/2020
 
-function [A,minxh,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel2(N,x,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,rs)
+function [A,minxh,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel2(N,x,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,w)
   format short e
   
   xhe2=1.-xhe1-xhe3;
@@ -35,7 +32,13 @@ function [A,minxh,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmode
   tau3=L*nhe*xhe2'*sigmaHe2/Nc;
   Tau=tau1+tau2+tau3;
   
-  A=N;
+  [a,b]=size(N);
+  
+  if a<Nc
+    A=[N;zeros(Nc-a,b)];
+  else
+    A=N;
+  endif
   AH1=A.*(bins-vH1)*6.62607004e-34;
   AHe1=A.*(bins-vHe1)*6.62607004e-34;
   AHe2=A.*(bins-vHe2)*6.62607004e-34;
@@ -64,18 +67,16 @@ function [A,minxh,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmode
   P1=qH1.*pHe1.*pHe2.*(1.-e.^(-Tau))./D;
   P2=qHe1.*pHe2.*pH1.*(1.-e.^(-Tau))./D;
   P3=qHe2.*pH1.*pHe1.*(1.-e.^(-Tau))./D;
+
+  totalH1=sum(A(1:Nc,:).*P1.*w,2)';
+  totalHe1=sum(A(1:Nc,:).*P2.*w,2)';
+  totalHe2=sum(A(1:Nc,:).*P3.*w,2)';
+  A(1:Nc,:)=A(1:Nc,:).*e.^(-Tau);
+  totalGH1=sum(AH1(1:Nc,:).*P1.*w,2)';
+  totalGHe1=sum(AHe1(1:Nc,:).*P2.*w,2)';
+  totalGHe2=sum(AHe2(1:Nc,:).*P3.*w,2)';
   
-  for k=1:Nc
-    front=find(x>=(k-1)*L/Nc+rs);
-    back=find(x<k*L/Nc+rs);
-    aim=intersect(front,back);
-    totalH1(k)=sum(sum(A(aim,:).*P1(k,:)));
-    totalHe1(k)=sum(sum(A(aim,:).*P2(k,:)));
-    totalHe2(k)=sum(sum(A(aim,:).*P3(k,:)));
-    A(aim,:)=A(aim,:).*e.^(-Tau)(k,:);
-    totalGH1(k)=sum(sum(AH1(aim,:).*P1(k,:)));
-    totalGHe1(k)=sum(sum(AHe1(aim,:).*P2(k,:)));
-    totalGHe2(k)=sum(sum(AHe2(aim,:).*P3(k,:)));
-  endfor
   minxh=1e-10*Nc./(L*[nh*max(sigmaH1),nhe*max(sigmaHe1),nhe*max(sigmaHe2)]);
+  
+  A=A(1:a,:);
 endfunction
