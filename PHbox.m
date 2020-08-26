@@ -1,4 +1,4 @@
-% Title: N,x,xh1,eq=PHbox
+% Title: N,x=PHbox
 %
 % Arguments: Gas (Function that describes the gas' effect on the photons)
 %            L (Length of box in cm)
@@ -15,8 +15,6 @@
 %            rad (Radius of source)
 % Returns: N (number matrix of photons after the first batch of photons reached the end of the box)
 %          x (Location of each photon packets)
-%          xh (Neutral Hydrogen Fraction, an array) 
-%          eq (Equilibrium value for Neutral Hydrogen Fraction)
 %
 % Compatibility: Octave (+Matlab?)
 % Author: To Kwok Hei Matthew
@@ -32,8 +30,9 @@
 %   Helium included 07/07/20
 %   Exclusive to Blackbody tweek 10/08/2020
 %   Special case when M==1 14/08/2020
+%   Change of graph outputs 18/08/2020
 
-function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad)
+function [N,x]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad)
   
   format long e
   
@@ -88,12 +87,11 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
   dt=dt/M;
   it=ceil(duration/dt)
   T=1
-  eq=zeros(1,Nc);
   x=zeros(1,0);
   s=size(bins);
   N=zeros(0,s(2));
   nhe=nh/ratio;
-  Nh=nh*Ac*L/Nc;                        %Total number of gas in each cell
+  Nh=nh*Ac*L/Nc;                       %Total number of gas in each cell
   Nhe=Nh/ratio;
   xh1=xh1i*ones(1,Nc);                 %Initial fractions for all cells
   xhe1=xhe1i*ones(1,Nc);
@@ -101,28 +99,18 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
   Temp=T0*ones(1,Nc);
   S=TEentropy(Temp,rho,xh1,xhe1,xhe3,ratio);
   
-  go=fopen('Gamma_list.txt','w+');
-  x1o=fopen('xh1_list.txt','w+');
-  x2o=fopen('xhe1_list.txt','w+');
-  x3o=fopen('xhe3_list.txt','w+');
-  to=fopen('Temp_list.txt','w+');
-  Go=fopen('G_list.txt','w+');
-  Lo=fopen('L_list.txt','w+');
+  %go=fopen('Gamma_list.txt','w+');
+  %x1o=fopen('xh1_list.txt','w+');
+  %x2o=fopen('xhe1_list.txt','w+');
+  %x3o=fopen('xhe3_list.txt','w+');
+  %to=fopen('Temp_list.txt','w+');
+  %Go=fopen('G_list.txt','w+');
+  %Lo=fopen('L_list.txt','w+');
   
-  xh1_list=[xh1i];
-  xhe1_list=[xhe1i];
-  xhe3_list=[xhe3i];
-  g_list=[0];
-  l_list=[0];
-  l1_list=[0];
-  t_list=[0];
-  T_list=[T0];
-  G1_list=[0];
-  R1_list=[0];
-  G2_list=[0];
-  R2_list=[0];
-  G3_list=[0];
-  R3_list=[0];
+  g_list=zeros(1,it);
+  l_list=zeros(1,it);
+  t_list=zeros(1,it);
+  T_list=T0*ones(1,it);
   
   if M==1
     while T<it
@@ -136,7 +124,7 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
       GHe2=zeros(1,Nc);
     
       N=PHsource(N,PHblackbody(bins,1e+5,c,rad),dt,rs,Ac);    %Source adding in photons
-      N=N.*(rs./x).^2;
+      %N=N.*(rs./x).^2;
       [N,mini,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel2(N,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,w);         %Gas acts on the photons
     
       %neg1=find(xh1<mini(1));
@@ -169,7 +157,6 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
       G=GH1+GHe1+GHe2;
       S=S+dt*2/3*rho^(-5/3)*(G-l);
       Temp=TEtemp(S,rho,xh1,xhe1,xhe3,ratio);
-      xhe2=1-xhe1-xhe3;
       %neg1=find(xh1<mini(1));
       %xh1(neg1)=mini(1);
       %neg2=find(xhe1<mini(2));
@@ -179,48 +166,36 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
       %xhe2(neg3)=mini(3);
       %xhe3=1.-xhe1.-xhe2;
     
-      T=T+1
       x=c*dt+x;
     
-      ne=(1-xh1)*nh+(1.-xhe1+xhe3)*nhe;
-      b2=REbetaHII(Temp);
-      a2=REalphaHII(Temp);
-      ae2=REalphaHeII(Temp);
-      ae3=REalphaHeIII(Temp);
-      xh1_list=[xh1_list,xh1(1)];
-      g_list=[g_list,G(1)];
-      l_list=[l_list,l(1)];
-      l1_list=[l1_list,ne(1)*b2(1)*(1-xh1(1))*nh];
-      T_list=[T_list,Temp(1)];
-      t_list=[t_list,T*dt];
-      G1_list=[G1_list,xh1(1)*GammaH1(1)];
-      R1_list=[R1_list,a2(1)*(1-xh1(1))*ne(1)];
-      G2_list=[G2_list,xhe1(1)*GammaHe1(1)];
-      R2_list=[R2_list,ae2(1)*xhe2(1)*ne(1)];
-      G3_list=[G3_list,xhe2(1)*GammaHe2(1)];
-      R3_list=[R3_list,ae3(1)*xhe3(1)*ne(1)];
-    
-      fprintf(go,"Time = %2e     ",T*dt);
-      fprintf(go,"%2e  ",GammaH1);
-      fprintf(go,"\n");
-      fprintf(x1o,"Time = %2e     ",T*dt);
-      fprintf(x1o,"%2e  ",xh1);
-      fprintf(x1o,"\n");
-      fprintf(x2o,"Time = %2e     ",T*dt);
-      fprintf(x2o,"%2e  ",xhe1);
-      fprintf(x2o,"\n");
-      fprintf(x3o,"Time = %2e     ",T*dt);
-      fprintf(x3o,"%2e  ",xhe3);
-      fprintf(x3o,"\n");
-      fprintf(to,"Time = %2e     ",T*dt);
-      fprintf(to,"%2e  ",Temp);
-      fprintf(to,"\n");
-      fprintf(Go,"Time = %2e     ",T*dt);
-      fprintf(Go,"%2e  ",G);
-      fprintf(Go,"\n");
-      fprintf(Lo,"Time = %2e     ",T*dt);
-      fprintf(Lo,"%2e  ",l);
-      fprintf(Lo,"\n");
+      g_list(T+1)=G(1);
+      l_list(T+1)=l(1);
+      T_list(T+1)=Temp(1);
+      t_list(T+1)=T*dt;
+      
+      T=T+1
+      
+      %fprintf(go,"Time = %2e     ",T*dt);
+      %fprintf(go,"%2e  ",GammaH1);
+      %fprintf(go,"\n");
+      %fprintf(x1o,"Time = %2e     ",T*dt);
+      %fprintf(x1o,"%2e  ",xh1);
+      %fprintf(x1o,"\n");
+      %fprintf(x2o,"Time = %2e     ",T*dt);
+      %fprintf(x2o,"%2e  ",xhe1);
+      %fprintf(x2o,"\n");
+      %fprintf(x3o,"Time = %2e     ",T*dt);
+      %fprintf(x3o,"%2e  ",xhe3);
+      %fprintf(x3o,"\n");
+      %fprintf(to,"Time = %2e     ",T*dt);
+      %fprintf(to,"%2e  ",Temp);
+      %fprintf(to,"\n");
+      %fprintf(Go,"Time = %2e     ",T*dt);
+      %fprintf(Go,"%2e  ",G);
+      %fprintf(Go,"\n");
+      %fprintf(Lo,"Time = %2e     ",T*dt);
+      %fprintf(Lo,"%2e  ",l);
+      %fprintf(Lo,"\n");
   
     end
   else
@@ -284,7 +259,6 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
       G=GH1+GHe1+GHe2;
       S=S+dt*2/3*rho^(-5/3)*(G-l);
       Temp=TEtemp(S,rho,xh1,xhe1,xhe3,ratio);
-      xhe2=1-xhe1-xhe3;
 
       %neg1=find(xh1<mini(1));
       %xh1(neg1)=mini(1);
@@ -295,155 +269,112 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
       %xhe2(neg3)=mini(3);
       %xhe3=1.-xhe1.-xhe2;
     
-      T=T+1
       x=c*dt+x;
     
-      ne=(1-xh1)*nh+(1.-xhe1+xhe3)*nhe;
-      b2=REbetaHII(Temp);
-      a2=REalphaHII(Temp);
-      ae2=REalphaHeII(Temp);
-      ae3=REalphaHeIII(Temp);
-      xh1_list=[xh1_list,xh1(1)];
-      g_list=[g_list,G(1)];
-      l_list=[l_list,l(1)];
-      l1_list=[l1_list,ne(1)*b2(1)*(1-xh1(1))*nh];
-      T_list=[T_list,Temp(1)];
-      t_list=[t_list,T*dt];
-      G1_list=[G1_list,xh1(1)*GammaH1(1)];
-      R1_list=[R1_list,a2(1)*(1-xh1(1))*ne(1)];
-      G2_list=[G2_list,xhe1(1)*GammaHe1(1)];
-      R2_list=[R2_list,ae2(1)*xhe2(1)*ne(1)];
-      G3_list=[G3_list,xhe2(1)*GammaHe2(1)];
-      R3_list=[R3_list,ae3(1)*xhe3(1)*ne(1)];
+      g_list(T+1)=G(1);
+      l_list(T+1)=l(1);
+      t_list(T+1)=T*dt;
       
-      fprintf(go,"Time = %2e     ",T*dt);
-      fprintf(go,"%2e  ",GammaH1);
-      fprintf(go,"\n");
-      fprintf(x1o,"Time = %2e     ",T*dt);
-      fprintf(x1o,"%2e  ",xh1);
-      fprintf(x1o,"\n");
-      fprintf(x2o,"Time = %2e     ",T*dt);
-      fprintf(x2o,"%2e  ",xhe1);
-      fprintf(x2o,"\n");
-      fprintf(x3o,"Time = %2e     ",T*dt);
-      fprintf(x3o,"%2e  ",xhe3);
-      fprintf(x3o,"\n");
-      fprintf(to,"Time = %2e     ",T*dt);
-      fprintf(to,"%2e  ",Temp);
-      fprintf(to,"\n");
-      fprintf(Go,"Time = %2e     ",T*dt);
-      fprintf(Go,"%2e  ",G);
-      fprintf(Go,"\n");
-      fprintf(Lo,"Time = %2e     ",T*dt);
-      fprintf(Lo,"%2e  ",l);
-      fprintf(Lo,"\n");
+      T=T+1
+      
+      %fprintf(go,"Time = %2e     ",T*dt);
+      %fprintf(go,"%2e  ",GammaH1);
+      %fprintf(go,"\n");
+      %fprintf(x1o,"Time = %2e     ",T*dt);
+      %fprintf(x1o,"%2e  ",xh1);
+      %fprintf(x1o,"\n");
+      %fprintf(x2o,"Time = %2e     ",T*dt);
+      %fprintf(x2o,"%2e  ",xhe1);
+      %fprintf(x2o,"\n");
+      %fprintf(x3o,"Time = %2e     ",T*dt);
+      %fprintf(x3o,"%2e  ",xhe3);
+      %fprintf(x3o,"\n");
+      %fprintf(to,"Time = %2e     ",T*dt);
+      %fprintf(to,"%2e  ",Temp);
+      %fprintf(to,"\n");
+      %fprintf(Go,"Time = %2e     ",T*dt);
+      %fprintf(Go,"%2e  ",G);
+      %fprintf(Go,"\n");
+      %fprintf(Lo,"Time = %2e     ",T*dt);
+      %fprintf(Lo,"%2e  ",l);
+      %fprintf(Lo,"\n");
   
     end
   end
   
-  fclose(go);
-  fclose(x1o);
-  fclose(x2o);
-  fclose(x3o);
-  fclose(to);
-  fclose(Go);
-  fclose(Lo);
+  %fclose(go);
+  %fclose(x1o);
+  %fclose(x2o);
+  %fclose(x3o);
+  %fclose(to);
+  %fclose(Go);
+  %fclose(Lo);
 
-  eq=NFhydrogen1(xh1,GammaH1,@REalphaHII,Temp,ne);
-  xh1_list=eq(1)./xh1_list;
   ratio0=l_list./g_list;
-  ratio1=R1_list./G1_list;
-  ratio2=R2_list./G2_list;
-  ratio3=R3_list./G3_list;
+  ratio1=l./G;
   
-  limx=t_list(end);
+  xp=c*dt*[1:Nc]+rs;
   
-  subplot(2,5,1)
-  plot(t_list,xh1_list);
-  axis([0,limx,0,1.2*max(xh1_list)])
-  xlabel("Time in seconds")
-  %legend("eq(xh1)/xh1(t)")
-  title("How quickly it is approaching equilibrium value")
+  limt=t_list(end);
+  limx=xp(end);
   
-  subplot(2,5,2)
+  subplot(2,4,1)
   plot(t_list,ratio0);
-  axis([0,limx,0,1.2*max(ratio0)])
+  axis([0,limt,0,1.2*max(ratio0)])
   xlabel("Time in seconds")
-  %legend("Cooling Rate/Heating Rate")
   title("Heating Rate vs Cooling Rate ratio")
   
-  subplot(2,5,3)
+  subplot(2,4,2)
   plot(t_list,g_list);
   hold on
   plot(t_list,l_list);
   hold off
-  axis([0,limx,0,1.2*max(g_list)])
+  axis([0,limt,0,1.2*max(g_list)])
   xlabel("Time in seconds")
   ylabel("Energy change in Joules per second")
-  %legend("Heating Rate","Cooling Rate")
   title("Heating Rate vs Cooling Rate, global")
   
-  subplot(2,5,6)
+  subplot(2,4,3)
   plot(t_list,T_list);
-  axis([0,limx,0,1.2*max(T_list)])
+  axis([0,limt,0,1.2*max(T_list)])
   xlabel("Time in seconds")
   ylabel("Temperature in K")
-  %legend("Temperature(t)")
-  title("Temperature")
+  title("Temperature vs Time graph (Nearest cell)")
   
-  subplot(2,5,4)
-  plot(t_list,ratio1);
-  axis([0,limx,0,1.2*max(ratio1)])
-  xlabel("Time in seconds")
-  %legend("Recombination Rate/Ionisation Rate")
-  title("Ionisation Rate vs Recombination Rate ratio, Hydrogen 1")
+  subplot(2,4,4)
+  plot(xp,Temp);
+  axis([rs,limx,0,1.2*max(Temp)])
+  xlabel("Distance in meters")
+  ylabel("Temperature in K")
+  title("Temperature vs Distance graph")
   
-  subplot(2,5,5)
-  plot(t_list,G1_list);
-  hold on
-  plot(t_list,R1_list);
-  hold off
-  axis([0,limx,0,1.2*max(G1_list)])
-  xlabel("Time in seconds")
-  ylabel("Rate of Change")
-  %legend("Ionisation Rate","Recombination Rate")
-  title("Ionisation Rate vs Recombination Rate, global, Hydrogen 1")
+  subplot(2,4,5)
+  plot(xp,ratio1);
+  axis([rs,limx,0,1.2*max(ratio1)])
+  xlabel("Distance in meters")
+  ylabel("Heating and Cooling ratio")
+  title("Ratio vs Distance graph")
   
-  subplot(2,5,7)
-  plot(t_list,ratio2);
-  axis([0,limx,0,1.2*max(ratio2)])
-  xlabel("Time in seconds")
-  %legend("Recombination Rate/Ionisation Rate")
-  title("Ionisation Rate vs Recombination Rate ratio, Helium 1")
+  subplot(2,4,6)
+  plot(xp,xh1);
+  axis([rs,limx,0,1.2])
+  xlabel("Distance in meters")
+  ylabel("Neutral Hydrogen Fraction")
+  title("Neutral Hydrogen Fraction")
   
-  subplot(2,5,8)
-  plot(t_list,G2_list);
-  hold on
-  plot(t_list,R2_list);
-  hold off
-  axis([0,limx,0,1.2*max(G2_list)])
-  xlabel("Time in seconds")
-  ylabel("Rate of Change")
-  %legend("Ionisation Rate","Recombination Rate")
-  title("Ionisation Rate vs Recombination Rate, global, Helium 1")
+  subplot(2,4,7)
+  plot(xp,xhe1);
+  axis([rs,limx,0,1.2])
+  xlabel("Distance in meters")
+  ylabel("Neutral Helium Fraction")
+  title("Neutral Helium Fraction")
   
-  subplot(2,5,9)
-  plot(t_list,ratio3);
-  axis([0,limx,0,1.2*max(ratio3)])
-  xlabel("Time in seconds")
-  %legend("Recombination Rate/Ionisation Rate")
-  title("Ionisation Rate vs Recombination Rate ratio, Helium 3")
-  
-  subplot(2,5,10)
-  plot(t_list,G3_list);
-  hold on
-  plot(t_list,R3_list);
-  hold off
-  axis([0,limx,0,1.2*max(G3_list)])
-  xlabel("Time in seconds")
-  ylabel("Rate of Change")
-  %legend("Ionisation Rate","Recombination Rate")
-  title("Ionisation Rate vs Recombination Rate, global, Helium 3")
+  subplot(2,4,8)
+  plot(xp,xhe3);
+  axis([rs,limx,0,1.2])
+  xlabel("Distance in meters")
+  ylabel("Ionised Helium Fraction")
+  title("Ionised Helium Fraction")
   
   T_list=log(T_list);
   T2_list=zeros(1,length(T_list)-1);
@@ -456,19 +387,7 @@ function [N,x,xh1,eq]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad
   
   T2_list=[1,T2_list];
   
-  figure(2)
-  plot(t_list,1./T2_list)
+  %figure(2)
+  %plot(t_list,1./T2_list)
   
-  %N=nh+nhe+ne;
-  
-  %Density=1.5*1.38064852e-23*T_list*N(1);
-  
-  %CScale=Density./l1_list;
-  %HScale=Density./g_list;
-  
-  %figure(3)
-  %plot(t_list,CScale);
-  
-  %figure(4)
-  %plot(t_list,HScale);
 end
