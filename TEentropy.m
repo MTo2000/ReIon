@@ -1,11 +1,12 @@
 % Title: S=TEentropy
 %
-% Arguments: Temp (Temperature, an array)
+% Arguments: Temp (Temperature in each cell)
 %            rho (Mass Density in kg m^-3)
-%            xh1 (Neutral Hydrogen Fraction (an array))
-%            xhe1 (Neutral Helium Fraction (an array))
-%            xhe3 (Ionised Helium Fraction (an array))
+%            xh1 (Neutral hydrogen fraction in each cell)
+%            xhe1 (Neutral helium fraction in each cell)
+%            xhe3 (Ionised helium fraction in each cell)
 %            R (Ratio)
+%
 % Returns: S (Entropy Parameter, an array)
 %
 % Compatibility: Octave (+Matlab?)

@@ -1,11 +1,12 @@
 % Title: x=NFhydrogen1
 %
-% Arguments: xh1 (Neutral Fraction of neutral hydrogen for last iteration)
-%            Gamma (Ionisation rate, an array)
+% Arguments: xh1 (Neutral Fraction of neutral hydrogen for last iteration in each cell)
+%            Gamma (Ionisation rate in each cell)
 %            Recombination (Temperature dependent function)
-%            Temp (Temperature, can be an array)
-%            nh (Number density of hudrogen atoms (regardless or ionisd or not) in m^-3)
-% Returns: x1 (Neutral Fraction of neutral hydrogen for next iteration)
+%            Temp (Temperature in each cell)
+%            ne (Number density of electrons in m^-3 in each cell)
+%
+% Returns: x1 (Neutral Fraction of neutral hydrogen for next iteration in each cell)
 %
 % Compatibility: Octave (+Matlab?)
 % Author: To Kwok Hei Matthew

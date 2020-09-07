@@ -1,6 +1,7 @@
 % Title: aT=REalphaHeII
 %
 % Arguments: Temp (Temperature, can be an array)
+%
 % Returns: aT (Recombination coefficient in m^3 s^-1)
 %
 % Compatibility: Octave (+Matlab?)

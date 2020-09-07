@@ -1,10 +1,7 @@
 % Title: N,x=PHbox
 %
-% Arguments: Gas (Function that describes the gas' effect on the photons)
-%            L (Length of box in cm)
-%            nh (Number density of Hydrogen in m^-3)
+% Arguments: nh (Number density of Hydrogen in m^-3)
 %            ratio (Ratio of Hyydrogen atoms to Helium atoms) 
-%            Ac (Cross section area of the box/cylinder in m^3)
 %            duration (How long will the simulation take place)
 %            xh1i (Initial Neutral Hydrogen Fraction)
 %            xhe1i (Initial Neutral Helium Fraction)
@@ -13,6 +10,7 @@
 %            rs (Some initial distances from source) 
 %            QN (Number of nodes for Quadrature)
 %            rad (Radius of source)
+%
 % Returns: N (number matrix of photons after the first batch of photons reached the end of the box)
 %          x (Location of each photon packets)
 %
@@ -31,10 +29,13 @@
 %   Exclusive to Blackbody tweek 10/08/2020
 %   Special case when M==1 14/08/2020
 %   Change of graph outputs 18/08/2020
+%   Simulation made into 3D 24/08/2020
 
-function [N,x]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad)
+function [N,x]=PHbox(nh,ratio,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad)
   
   format long e
+  
+  L=((15e+48*duration/(4*pi*nh))^(1/3))*3;
   
   if xhe1i<0 || xhe3i<0
     error ("Helium fractions can't be negative")
@@ -54,9 +55,7 @@ function [N,x]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad)
   [u,w3]=gen_legendre_compute(0,1/vHe2,QN);
   
   bin3=flip(1./u);
-  w1=w1./bin1;
-  w2=w2./bin2;
-  w3=flip(w3).*bin3;
+  w3=flip(w3).*(bin3).^2;
   
   bins=[bin1,bin2,bin3];
   w=[w1,w2,w3];
@@ -91,7 +90,10 @@ function [N,x]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad)
   s=size(bins);
   N=zeros(0,s(2));
   nhe=nh/ratio;
-  Nh=nh*Ac*L/Nc;                       %Total number of gas in each cell
+  xp=c*dt*[1:Nc]+rs;
+  Nh=nh*(4*pi/3)*((xp+c*dt).^3-xp.^3);
+  %display(Nh(end-10:end));   
+  %display(Nh(1:1000));
   Nhe=Nh/ratio;
   xh1=xh1i*ones(1,Nc);                 %Initial fractions for all cells
   xhe1=xhe1i*ones(1,Nc);
@@ -99,18 +101,12 @@ function [N,x]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad)
   Temp=T0*ones(1,Nc);
   S=TEentropy(Temp,rho,xh1,xhe1,xhe3,ratio);
   
-  %go=fopen('Gamma_list.txt','w+');
-  %x1o=fopen('xh1_list.txt','w+');
-  %x2o=fopen('xhe1_list.txt','w+');
-  %x3o=fopen('xhe3_list.txt','w+');
-  %to=fopen('Temp_list.txt','w+');
-  %Go=fopen('G_list.txt','w+');
-  %Lo=fopen('L_list.txt','w+');
-  
   g_list=zeros(1,it);
   l_list=zeros(1,it);
   t_list=zeros(1,it);
   T_list=T0*ones(1,it);
+  
+  flux=PHblackbody(bins,1e+5,c,rad);
   
   if M==1
     while T<it
@@ -123,33 +119,26 @@ function [N,x]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad)
       GHe1=zeros(1,Nc);
       GHe2=zeros(1,Nc);
     
-      N=PHsource(N,PHblackbody(bins,1e+5,c,rad),dt,rs,Ac);    %Source adding in photons
+      N=PHsource(N,flux,bins,dt);    %Source adding in photons
       %N=N.*(rs./x).^2;
-      [N,mini,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel2(N,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,w);         %Gas acts on the photons
+      [N,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel2(N,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,w);         %Gas acts on the photons
     
-      %neg1=find(xh1<mini(1));
-      %xh1(neg1)=mini(1);
-      %neg2=find(xhe1<mini(2));
-      %xhe1(neg2)=mini(2);
-      %xhe2=1.-xhe1.-xhe3;
-      %neg3=find(xhe2<mini(3));
-      %xhe2(neg3)=mini(3);
-      %xhe3=max(1.-xhe1.-xhe2,1e-10);
       nonz=find(totalH1~=0);
        
       xhe2=1-xhe1-xhe3;
       
-      GammaH1(nonz)=totalH1(nonz)./(dt*Nh*xh1(nonz));
-      GammaHe1(nonz)=totalHe1(nonz)./(dt*Nhe*xhe1(nonz));
+      GammaH1(nonz)=totalH1(nonz)./(dt*Nh(nonz).*xh1(nonz));
+      GammaHe1(nonz)=totalHe1(nonz)./(dt*Nhe(nonz).*xhe1(nonz));
       non2=find(xhe2~=0);
       non3=intersect(nonz,non2);
-      GammaHe2(non3)=totalHe2(non3)./(dt*Nhe*xhe2(non3));
-      GH1(nonz)=nh*totalGH1(nonz)./(dt*Nh);
-      GHe1(nonz)=nhe*totalGHe1(nonz)./(dt*Nhe);
-      GHe2(nonz)=nhe*totalGHe2(nonz)./(dt*Nhe);  
+      GammaHe2(non3)=totalHe2(non3)./(dt*Nhe(non3).*xhe2(non3));
+      GH1(nonz)=nh*totalGH1(nonz)./(dt*Nh(nonz));
+      GHe1(nonz)=nhe*totalGHe1(nonz)./(dt*Nhe(nonz));
+      GHe2(nonz)=nhe*totalGHe2(nonz)./(dt*Nhe(nonz));  
 
-    
-      l=TEeH(nh,nhe,xh1,xhe1,xhe3,Temp)+TEphoton(nh,nhe,xh1,xhe1,xhe3,Temp);
+      %display(GammaH1(1:10));
+      
+      l=TEeH(nh,nhe,xh1,xhe1,xhe3,Temp)+TEphoton(nh,nhe,xh1,xhe1,xhe3,Temp)+TEeHe(nh,nhe,xh1,xhe1,xhe3,Temp);
       ne=(1.-xh1)*nh+(1.-xhe1+xhe3)*nhe;
       xh1=xh1+dt*(-GammaH1.*xh1+REalphaHII(Temp).*(1.-xh1).*ne);
       xhe1=xhe1+dt*(-GammaHe1.*xhe1+REalphaHeII(Temp).*xhe2.*ne);
@@ -157,14 +146,7 @@ function [N,x]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad)
       G=GH1+GHe1+GHe2;
       S=S+dt*2/3*rho^(-5/3)*(G-l);
       Temp=TEtemp(S,rho,xh1,xhe1,xhe3,ratio);
-      %neg1=find(xh1<mini(1));
-      %xh1(neg1)=mini(1);
-      %neg2=find(xhe1<mini(2));
-      %xhe1(neg2)=mini(2);
-      %xhe2=1.-xhe1.-xhe3;
-      %neg3=find(xhe2<mini(3));
-      %xhe2(neg3)=mini(3);
-      %xhe3=1.-xhe1.-xhe2;
+     
     
       x=c*dt+x;
     
@@ -174,28 +156,6 @@ function [N,x]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad)
       t_list(T+1)=T*dt;
       
       T=T+1
-      
-      %fprintf(go,"Time = %2e     ",T*dt);
-      %fprintf(go,"%2e  ",GammaH1);
-      %fprintf(go,"\n");
-      %fprintf(x1o,"Time = %2e     ",T*dt);
-      %fprintf(x1o,"%2e  ",xh1);
-      %fprintf(x1o,"\n");
-      %fprintf(x2o,"Time = %2e     ",T*dt);
-      %fprintf(x2o,"%2e  ",xhe1);
-      %fprintf(x2o,"\n");
-      %fprintf(x3o,"Time = %2e     ",T*dt);
-      %fprintf(x3o,"%2e  ",xhe3);
-      %fprintf(x3o,"\n");
-      %fprintf(to,"Time = %2e     ",T*dt);
-      %fprintf(to,"%2e  ",Temp);
-      %fprintf(to,"\n");
-      %fprintf(Go,"Time = %2e     ",T*dt);
-      %fprintf(Go,"%2e  ",G);
-      %fprintf(Go,"\n");
-      %fprintf(Lo,"Time = %2e     ",T*dt);
-      %fprintf(Lo,"%2e  ",l);
-      %fprintf(Lo,"\n");
   
     end
   else
@@ -209,18 +169,9 @@ function [N,x]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad)
       GHe1=zeros(1,Nc);
       GHe2=zeros(1,Nc);
     
-      N=PHsource(N,PHblackbody(bins,1e+5,c,rad),dt,rs,Ac);    %Source adding in photons
-      N=N.*(rs./x).^2;
-      [N,mini,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel(N,x,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,w,rs);         %Gas acts on the photons
-    
-      %neg1=find(xh1<mini(1));
-      %xh1(neg1)=mini(1);
-      %neg2=find(xhe1<mini(2));
-      %xhe1(neg2)=mini(2);
-      %xhe2=1.-xhe1.-xhe3;
-      %neg3=find(xhe2<mini(3));
-      %xhe2(neg3)=mini(3);
-      %xhe3=max(1.-xhe1.-xhe2,1e-10);
+      N=PHsource(N,PHblackbody(bins,1e+5,c,rad),bins,dt);    %Source adding in photons
+      %N=N.*(rs./x).^2;
+      [N,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel(N,x,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,w,rs);         %Gas acts on the photons
     
       filled=floor(T/M);
       ext=rem(T,M);
@@ -251,7 +202,7 @@ function [N,x]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad)
         end
       end
     
-      l=TEeH(nh,nhe,xh1,xhe1,xhe3,Temp)+TEphoton(nh,nhe,xh1,xhe1,xhe3,Temp);
+      l=TEeH(nh,nhe,xh1,xhe1,xhe3,Temp)+TEphoton(nh,nhe,xh1,xhe1,xhe3,Temp)+TEeHe(nh,nhe,xh1,xhe1,xhe3,Temp);
       ne=(1.-xh1)*nh+(1.-xhe1+xhe3)*nhe;
       xh1=xh1+dt*(-GammaH1.*xh1+REalphaHII(Temp).*(1.-xh1).*ne);
       xhe1=xhe1+dt*(-GammaHe1.*xhe1+REalphaHeII(Temp).*(1.-xhe1-xhe3).*ne);
@@ -260,15 +211,6 @@ function [N,x]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad)
       S=S+dt*2/3*rho^(-5/3)*(G-l);
       Temp=TEtemp(S,rho,xh1,xhe1,xhe3,ratio);
 
-      %neg1=find(xh1<mini(1));
-      %xh1(neg1)=mini(1);
-      %neg2=find(xhe1<mini(2));
-      %xhe1(neg2)=mini(2);
-      %xhe2=1.-xhe1.-xhe3;
-      %neg3=find(xhe2<mini(3));
-      %xhe2(neg3)=mini(3);
-      %xhe3=1.-xhe1.-xhe2;
-    
       x=c*dt+x;
     
       g_list(T+1)=G(1);
@@ -277,43 +219,15 @@ function [N,x]=PHbox(L,nh,ratio,Ac,duration,xh1i,xhe1i,xhe3i,T0,rs,QN,rad)
       
       T=T+1
       
-      %fprintf(go,"Time = %2e     ",T*dt);
-      %fprintf(go,"%2e  ",GammaH1);
-      %fprintf(go,"\n");
-      %fprintf(x1o,"Time = %2e     ",T*dt);
-      %fprintf(x1o,"%2e  ",xh1);
-      %fprintf(x1o,"\n");
-      %fprintf(x2o,"Time = %2e     ",T*dt);
-      %fprintf(x2o,"%2e  ",xhe1);
-      %fprintf(x2o,"\n");
-      %fprintf(x3o,"Time = %2e     ",T*dt);
-      %fprintf(x3o,"%2e  ",xhe3);
-      %fprintf(x3o,"\n");
-      %fprintf(to,"Time = %2e     ",T*dt);
-      %fprintf(to,"%2e  ",Temp);
-      %fprintf(to,"\n");
-      %fprintf(Go,"Time = %2e     ",T*dt);
-      %fprintf(Go,"%2e  ",G);
-      %fprintf(Go,"\n");
-      %fprintf(Lo,"Time = %2e     ",T*dt);
-      %fprintf(Lo,"%2e  ",l);
-      %fprintf(Lo,"\n");
-  
     end
   end
   
-  %fclose(go);
-  %fclose(x1o);
-  %fclose(x2o);
-  %fclose(x3o);
-  %fclose(to);
-  %fclose(Go);
-  %fclose(Lo);
+  %display(xh1(1:100)');
+  %display(xhe1(1:100)');
+  %display(xhe3(1:100)');
 
   ratio0=l_list./g_list;
   ratio1=l./G;
-  
-  xp=c*dt*[1:Nc]+rs;
   
   limt=t_list(end);
   limx=xp(end);

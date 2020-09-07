@@ -1,10 +1,11 @@
 % Title: lum=PHblackbody
 %
-% Arguments: Bins (an array, preferrably row, can be column)
-%            T (Temperature, an array)
+% Arguments: Bins (An array of frequency used)
+%            T (Temperature of each cell)
 %            c (Speed of Light)
 %            rad (Radius of source)
-% Returns: lum (Luminosity)
+%
+% Returns: lum (Luminosity for each frequency)
 % 
 % Compatibility: Octave (+Matlab?)
 % Author: To Kwok Hei Matthew

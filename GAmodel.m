@@ -2,20 +2,31 @@
 %
 % Arguments: N (number matrix of photons before the effects of the gas)
 %            x (array recording the position of each photon packets)
-%            nh (Number density of hydrogens (neutral of ionised) in cm^-3) 
-%            sigma (Cross section of hydrogens in cm^2) 
+%            nh (Number density of hydrogens (neutral or ionised) in m^-3) 
+%            nhe (Number density of heliums (neutral or ionised) in m^-3)
+%            sigmaH1 (Array of Cross section of hydrogen I in m^2 for each frequency)
+%            sigmaHe1 (Array of Cross section of helium I in m^2 for each frequency)
+%            sigmaHe2 (Array of Cross section of helium II in m^2 for each frequency)
 %            Nc (Integer number of cells)
-%            L (Length of the box in cm)
-%            xh1 (Neutral Fraction) 
-%            bins (An array)
-%            vT (Threshold frequency)
-%            w (Weighting)
+%            L (Length of the box in m)
+%            xh1 (Array of Neutral hydrogen fractions in each cell)
+%            xhe1 (Array of Neutral helium fractions in each cell)
+%            xhe3 (Ionised helium fraction in each cell)
+%            bins (An array of frequency used)
+%            vH1 (Threshold frequency for hydrogen I)
+%            vHe1 (Threshold frequency for helium I)
+%            vHe2 (Threshold frequency for helium II)
+%            w (Weighting for each frequency, an array)
+%            rs (Distance from the source) 
+%
 % Returns: A (number matrix of photons after the effects of the gas)
-%          minxh (minimum neutral fractions to prevent numerical error growing exponentially)
-%          total1 (total number of photons in each cell before the gas acts on it)
-%          total2 (total number of photons in each cell after the gas acts on it)
-%          totalG1 (total amount of photon energy that could be absorbed)
-%          totalG2 (total amount of photon energy that exits) 
+%          totalH1 (total number of hydrogen I that got excited in each cell)
+%          totalHe1 (total number of helium I that got excited in each cell)
+%          totalHe2 (total number of helium II that got excited in each cell)
+%          totalGH1 (total energy released from hydrogen I excitation in each cell)
+%          totalGHe1 (total energy released from helium I excitation in each cell)
+%          totalGHe2 (total energy released from helium II excitation in
+%          each cell)
 %
 % Compatibility: Octave (+Matlab?)
 % Author: To Kwok Hei Matthew
@@ -25,7 +36,7 @@
 %   Added minimum calculations 25/06.20
 %   Added total number calculations 28/06/20
 
-function [A,minxh,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel(N,x,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,w,rs)
+function [A,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmodel(N,x,nh,nhe,sigmaH1,sigmaHe1,sigmaHe2,Nc,L,xh1,xhe1,xhe3,bins,vH1,vHe1,vHe2,w,rs)
   format short e
   
   xhe2=1.-xhe1-xhe3;
@@ -77,5 +88,5 @@ function [A,minxh,totalH1,totalHe1,totalHe2,totalGH1,totalGHe1,totalGHe2]=GAmode
     totalGHe1(k)=sum(sum(AHe1(aim,:).*P2(k,:).*w));
     totalGHe2(k)=sum(sum(AHe2(aim,:).*P3(k,:).*w));
   end
-  minxh=1e-10*Nc./(L*[nh*max(sigmaH1),nhe*max(sigmaHe1),nhe*max(sigmaHe2)]);
+
 end

@@ -2,6 +2,8 @@
 %
 % Arguments: Bins (an array, preferrably row, can be column)
 %            Alpha (The power the frequency goes)
+%            vT (Threshold frequency)
+%
 % Returns: lum (Luminosity)
 % 
 % Compatibility: Octave (+Matlab?)

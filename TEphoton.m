@@ -1,9 +1,13 @@
 % Title: L=TEphoton
 %
-% Arguments: nh (Number density of Hydrogen in m^-3) 
-%            xh1 (Neutral Fraction (an array))
-%            Recombination (Temperature dependent function) 
-%            Temp (Temperature, float)  
+% Arguments: nh (Number density of Hydrogen (Neutral or Ionised) in m^-3 in each cell)
+%            nhe (Number density of Helium (Neutral or Ionised) in m^-3 in
+%            each cell)
+%            xh1 (Neutral hydrogen fraction in each cell)
+%            xhe1 (Neutral helium fraction in each cell)
+%            xhe3 (Ionised helium fraction in each cell) 
+%            Temp (Temperature in each cell)  
+%
 % Returns: L (Cooling rate from photon cooling)
 %
 % Compatibility: Octave (+Matlab?)

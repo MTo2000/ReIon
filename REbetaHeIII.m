@@ -1,6 +1,7 @@
 % Title: bT=REbetaHeIII
 %
 % Arguments: Temp (Temperature, can be an array)
+%
 % Returns: bT (Recombination coefficient in J m^3 s^-1)
 %
 % Compatibility: Octave (+Matlab?)
